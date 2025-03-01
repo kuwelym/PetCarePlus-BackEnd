@@ -43,17 +43,22 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(request ->
-                        request.requestMatchers("/auth/**").permitAll()
-                                // those permissions are just for testing
-                                // replace things belonged to ADMIN only later on
+                        request.requestMatchers("/auth/me").authenticated()
+                                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/auth/email-verification/**").permitAll()
                                 .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/roles/**").hasAuthority("USER")
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/users/**").hasAuthority("USER")
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**",
+                                        "/swagger-ui.html",
+                                        "/webjars/**"
+                                ).permitAll()
 
-                        .anyRequest().authenticated()
+                                // Các route yêu cầu quyền USER
+                                .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
+                                .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER")
+                                .requestMatchers("/pets/**").authenticated()
+                                .requestMatchers("/notifications/**").authenticated()
+
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -61,11 +66,11 @@ public class SecurityConfig {
                         jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(customAccessDeniedHandler)
-                )
-        ;
+                );
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
