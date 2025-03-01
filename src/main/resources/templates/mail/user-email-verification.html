@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Email Verification</h2>
+    <p>Hello <strong th:text="${fullName}">User</strong>,</p>
+    <p>Thank you for registering with <strong th:text="${APP_NAME}">Petcare+</strong>! Please verify your email address by this OTP code:</p>
+    <h2 th:text="${otpCode}">123456</h2>
+    <p class="footer">If you did not sign up for this account, you can safely ignore this email.</p>
+</div>
+</body>
+</html>
