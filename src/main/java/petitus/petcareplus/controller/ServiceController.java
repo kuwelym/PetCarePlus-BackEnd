@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import petitus.petcareplus.dto.request.ServiceRequest;
+
+import petitus.petcareplus.dto.request.service.ServicePatchRequest;
+import petitus.petcareplus.dto.request.service.ServiceRequest;
 import petitus.petcareplus.dto.response.ServiceResponse;
 import petitus.petcareplus.service.ServiceService;
 
@@ -41,13 +43,14 @@ public class ServiceController {
         return new ResponseEntity<>(serviceService.createService(request), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Update a service")
-    public ResponseEntity<ServiceResponse> updateService(@PathVariable UUID id, 
-                                                        @Valid @RequestBody ServiceRequest request) {
-        return ResponseEntity.ok(serviceService.updateService(id, request));
-    }
+
+    @PatchMapping("/{id}")
+@PreAuthorize("hasAuthority('ADMIN')")
+@Operation(summary = "Update a service")
+public ResponseEntity<ServiceResponse> updateService(@PathVariable UUID id, 
+                                                   @Valid @RequestBody ServicePatchRequest request) {
+    return ResponseEntity.ok(serviceService.updateService(id, request));
+}
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")

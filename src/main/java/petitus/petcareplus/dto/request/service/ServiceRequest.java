@@ -1,4 +1,4 @@
-package petitus.petcareplus.dto.request;
+package petitus.petcareplus.dto.request.service;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

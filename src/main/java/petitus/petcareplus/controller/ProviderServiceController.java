@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import petitus.petcareplus.dto.request.ProviderServiceRequest;
+
+import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
+import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
 import petitus.petcareplus.dto.response.ProviderServiceResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ProviderServiceService;
@@ -48,18 +50,18 @@ public class ProviderServiceController {
         );
     }
 
-    @PutMapping("/providers/services/{serviceId}")
-    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
-    @Operation(summary = "Update a provider's service offering")
-    public ResponseEntity<ProviderServiceResponse> updateProviderService(
-            @AuthenticationPrincipal JwtUserDetails currentUser,
-            @PathVariable UUID serviceId,
-            @Valid @RequestBody ProviderServiceRequest request) {
-        UUID providerId = currentUser.getId();
-        return ResponseEntity.ok(
-                providerServiceService.updateProviderService(providerId, serviceId, request)
-        );
-    }
+    @PatchMapping("/providers/services/{serviceId}")
+@PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
+@Operation(summary = "Update a provider's service offering")
+public ResponseEntity<ProviderServiceResponse> updateProviderService(
+        @AuthenticationPrincipal JwtUserDetails currentUser,
+        @PathVariable UUID serviceId,
+        @Valid @RequestBody ProviderServicePatchRequest request) {
+    UUID providerId = currentUser.getId();
+    return ResponseEntity.ok(
+            providerServiceService.updateProviderService(providerId, serviceId, request)
+    );
+}
 
     @DeleteMapping("/providers/services/{serviceId}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")

@@ -3,7 +3,9 @@ package petitus.petcareplus.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import petitus.petcareplus.dto.request.ServiceRequest;
+
+import petitus.petcareplus.dto.request.service.ServicePatchRequest;
+import petitus.petcareplus.dto.request.service.ServiceRequest;
 import petitus.petcareplus.dto.response.ServiceResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
@@ -50,22 +52,32 @@ public class ServiceService {
     }
 
     @Transactional
-    public ServiceResponse updateService(UUID id, ServiceRequest request) {
+    public ServiceResponse updateService(UUID id, ServicePatchRequest request) {
         PetService service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
         // Check if updated name conflicts with another service
-        serviceRepository.findByName(request.getName())
-                .ifPresent(existingService -> {
-                    if (!existingService.getId().equals(id)) {
-                        throw new BadRequestException("Service name already exists");
-                    }
-                });
+        if (request.getName() != null) {
+            serviceRepository.findByName(request.getName())
+                    .ifPresent(existingService -> {
+                        if (!existingService.getId().equals(id)) {
+                            throw new BadRequestException("Service name already exists");
+                        }
+                    });
+            service.setName(request.getName());
+        }
 
-        service.setName(request.getName());
-        service.setDescription(request.getDescription());
-        service.setIconUrl(request.getIconUrl());
-        service.setBasePrice(request.getBasePrice());
+        if (request.getDescription() != null) {
+            service.setDescription(request.getDescription());
+        }
+        
+        if (request.getIconUrl() != null) {
+            service.setIconUrl(request.getIconUrl());
+        }
+        
+        if (request.getBasePrice() != null) {
+            service.setBasePrice(request.getBasePrice());
+        }
 
         PetService updatedService = serviceRepository.save(service);
         return mapToServiceResponse(updatedService);

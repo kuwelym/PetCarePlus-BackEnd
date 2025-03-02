@@ -3,7 +3,9 @@ package petitus.petcareplus.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import petitus.petcareplus.dto.request.ProviderServiceRequest;
+
+import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
+import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
 import petitus.petcareplus.dto.response.ProviderServiceResponse;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.ProviderService;
@@ -61,14 +63,19 @@ public class ProviderServiceService {
     }
 
     @Transactional
-    public ProviderServiceResponse updateProviderService(UUID providerId, UUID serviceId, ProviderServiceRequest request) {
+    public ProviderServiceResponse updateProviderService(UUID providerId, UUID serviceId, ProviderServicePatchRequest request) {
         ProviderServiceId id = new ProviderServiceId(providerId, serviceId);
         
         ProviderService providerService = providerServiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider service not found"));
 
-        providerService.setCustomPrice(request.getCustomPrice());
-        providerService.setCustomDescription(request.getCustomDescription());
+                if (request.getCustomPrice() != null) {
+                        providerService.setCustomPrice(request.getCustomPrice());
+                    }
+                    
+                    if (request.getCustomDescription() != null) {
+                        providerService.setCustomDescription(request.getCustomDescription());
+                    }
 
         ProviderService updatedProviderService = providerServiceRepository.save(providerService);
         return mapToProviderServiceResponse(updatedProviderService);
