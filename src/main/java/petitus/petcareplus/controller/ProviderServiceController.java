@@ -25,19 +25,29 @@ import java.util.UUID;
 public class ProviderServiceController {
     private final ProviderServiceService providerServiceService;
 
-    @GetMapping("/providers/{providerId}/services")
-    @Operation(summary = "Get all services offered by a provider")
-    public ResponseEntity<List<ProviderServiceResponse>> getProviderServices(@PathVariable UUID providerId) {
-        return ResponseEntity.ok(providerServiceService.getProviderServices(providerId));
+    @GetMapping("/provider-services")
+    @Operation(summary = "Get all provider services")
+    public ResponseEntity<List<ProviderServiceResponse>> getAllProviderServices() {
+        return ResponseEntity.ok(providerServiceService.getAllProviderServices());
     }
 
-    @GetMapping("/services/{serviceId}/providers")
-    @Operation(summary = "Get all providers offering a service")
-    public ResponseEntity<List<ProviderServiceResponse>> getProvidersByService(@PathVariable UUID serviceId) {
-        return ResponseEntity.ok(providerServiceService.getProvidersByService(serviceId));
-    }
+    // @GetMapping("/providers/{providerId}/services")
+    // @Operation(summary = "Get all services offered by a provider")
+    // public ResponseEntity<List<ProviderServiceResponse>>
+    // getProviderServices(@PathVariable UUID providerId) {
+    // return
+    // ResponseEntity.ok(providerServiceService.getProviderServices(providerId));
+    // }
 
-    @PostMapping("/providers/services")
+    // @GetMapping("/services/{serviceId}/providers")
+    // @Operation(summary = "Get all providers offering a service")
+    // public ResponseEntity<List<ProviderServiceResponse>>
+    // getProvidersByService(@PathVariable UUID serviceId) {
+    // return
+    // ResponseEntity.ok(providerServiceService.getProvidersByService(serviceId));
+    // }
+
+    @PostMapping("/provider-services")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Add a service to provider's offerings")
     public ResponseEntity<ProviderServiceResponse> addServiceToProvider(
@@ -46,24 +56,22 @@ public class ProviderServiceController {
         UUID providerId = currentUser.getId();
         return new ResponseEntity<>(
                 providerServiceService.addServiceToProvider(providerId, request),
-                HttpStatus.CREATED
-        );
+                HttpStatus.CREATED);
     }
 
-    @PatchMapping("/providers/services/{serviceId}")
-@PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
-@Operation(summary = "Update a provider's service offering")
-public ResponseEntity<ProviderServiceResponse> updateProviderService(
-        @AuthenticationPrincipal JwtUserDetails currentUser,
-        @PathVariable UUID serviceId,
-        @Valid @RequestBody ProviderServicePatchRequest request) {
-    UUID providerId = currentUser.getId();
-    return ResponseEntity.ok(
-            providerServiceService.updateProviderService(providerId, serviceId, request)
-    );
-}
+    @PatchMapping("/provider-services/{serviceId}")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
+    @Operation(summary = "Update a provider's service offering")
+    public ResponseEntity<ProviderServiceResponse> updateProviderService(
+            @AuthenticationPrincipal JwtUserDetails currentUser,
+            @PathVariable UUID serviceId,
+            @Valid @RequestBody ProviderServicePatchRequest request) {
+        UUID providerId = currentUser.getId();
+        return ResponseEntity.ok(
+                providerServiceService.updateProviderService(providerId, serviceId, request));
+    }
 
-    @DeleteMapping("/providers/services/{serviceId}")
+    @DeleteMapping("/provider-services/{serviceId}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Remove a service from provider's offerings")
     public ResponseEntity<Void> removeServiceFromProvider(

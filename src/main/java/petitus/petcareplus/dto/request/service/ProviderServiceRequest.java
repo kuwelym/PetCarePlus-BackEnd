@@ -17,10 +17,9 @@ import java.util.UUID;
 public class ProviderServiceRequest {
     @NotNull(message = "Service ID is required")
     private UUID serviceId;
-    
-    @NotNull(message = "Custom price is required")
+
     @DecimalMin(value = "0.0", inclusive = false, message = "Custom price must be greater than 0")
     private BigDecimal customPrice;
-    
+
     private String customDescription;
 }

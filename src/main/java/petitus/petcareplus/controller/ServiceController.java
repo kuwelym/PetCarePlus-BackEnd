@@ -43,14 +43,13 @@ public class ServiceController {
         return new ResponseEntity<>(serviceService.createService(request), HttpStatus.CREATED);
     }
 
-
     @PatchMapping("/{id}")
-@PreAuthorize("hasAuthority('ADMIN')")
-@Operation(summary = "Update a service")
-public ResponseEntity<ServiceResponse> updateService(@PathVariable UUID id, 
-                                                   @Valid @RequestBody ServicePatchRequest request) {
-    return ResponseEntity.ok(serviceService.updateService(id, request));
-}
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Update a service")
+    public ResponseEntity<ServiceResponse> updateService(@PathVariable UUID id,
+            @Valid @RequestBody ServicePatchRequest request) {
+        return ResponseEntity.ok(serviceService.updateService(id, request));
+    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
