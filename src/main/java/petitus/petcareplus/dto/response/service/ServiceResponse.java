@@ -1,4 +1,4 @@
-package petitus.petcareplus.dto.response;
+package petitus.petcareplus.dto.response.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

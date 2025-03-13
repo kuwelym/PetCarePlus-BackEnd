@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
-import petitus.petcareplus.dto.response.ProviderServiceResponse;
+import petitus.petcareplus.dto.response.service.ProviderServiceResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ProviderServiceService;
 

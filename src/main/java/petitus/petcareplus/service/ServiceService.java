@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import petitus.petcareplus.dto.request.service.ServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ServiceRequest;
-import petitus.petcareplus.dto.response.ServiceResponse;
+import petitus.petcareplus.dto.response.service.ServiceResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.PetService;
@@ -70,11 +70,11 @@ public class ServiceService {
         if (request.getDescription() != null) {
             service.setDescription(request.getDescription());
         }
-        
+
         if (request.getIconUrl() != null) {
             service.setIconUrl(request.getIconUrl());
         }
-        
+
         if (request.getBasePrice() != null) {
             service.setBasePrice(request.getBasePrice());
         }

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.dto.request.service.ServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ServiceRequest;
-import petitus.petcareplus.dto.response.ServiceResponse;
+import petitus.petcareplus.dto.response.service.ServiceResponse;
 import petitus.petcareplus.service.ServiceService;
 
 import java.util.List;
