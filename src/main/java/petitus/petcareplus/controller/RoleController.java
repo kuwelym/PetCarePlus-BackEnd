@@ -11,7 +11,7 @@ import petitus.petcareplus.utils.Constants;
 import java.util.List;
 
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("/api/roles")
 @RequiredArgsConstructor
 public class RoleController {
     private final RoleService roleService;
