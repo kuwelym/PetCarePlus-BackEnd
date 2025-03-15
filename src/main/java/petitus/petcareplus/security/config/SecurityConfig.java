@@ -41,16 +41,16 @@ public class SecurityConfig {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http.csrf(AbstractHttpConfigurer::disable)
                                 .cors(Customizer.withDefaults())
-                                .authorizeHttpRequests(request -> request.requestMatchers("/auth/**").permitAll()
+                                .authorizeHttpRequests(request -> request.requestMatchers("/api/auth/**").permitAll()
                                                 // those permissions are just for testing
                                                 // replace things belonged to ADMIN only later on
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
-                                                                "/roles/**")
+                                                                "/api/roles/**")
                                                 .hasAuthority("USER")
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
-                                                                "/users/**")
+                                                                "/api/users/**")
                                                 .hasAuthority("USER")
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
                                                                 "/v3/api-docs/**")
