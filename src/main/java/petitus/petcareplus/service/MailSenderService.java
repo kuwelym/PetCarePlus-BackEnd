@@ -42,7 +42,7 @@ public class MailSenderService {
         Context ctx = createContext();
         ctx.setVariable("name", user.getName());
         ctx.setVariable("fullName", user.getFullName());
-        ctx.setVariable("otpCode", token.getToken());
+        ctx.setVariable("verificationLink", "http://localhost:8080/auth/email-verification/" + token.getId());
 
         String subject = messageSourceService.get("email_verification_sent");
 
