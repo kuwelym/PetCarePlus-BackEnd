@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification</title>
+    <title>Email Verified</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +15,7 @@
             max-width: 600px;
             background: #ffffff;
             padding: 20px;
+            margin: 20px auto;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
@@ -31,24 +32,13 @@
             font-size: 14px;
             color: #888;
         }
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #007bff;
-            border-radius: 5px;
-            text-decoration: none;
-        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>Email Verification</h2>
-    <p>Hello <strong th:text="${fullName}">User</strong>,</p>
-    <p>Thank you for registering with <strong th:text="${APP_NAME}">Petcare+</strong>! Please verify your email address by clicking the button below:</p>
-    <p><a th:href="${verificationLink}" class="button">Verify Email</a></p>
-    <p class="footer">If you did not sign up for this account, you can safely ignore this email.</p>
+    <h2>Email Verified</h2>
+    <p>Your email has been successfully verified. You can now log in and start using our services.</p>
+    <p class="footer">Thank you for verifying your email address.</p>
 </div>
 </body>
 </html>

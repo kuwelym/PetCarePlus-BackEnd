@@ -160,8 +160,8 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void verifyEmail(String token) {
-        User user = emailVerificationTokenService.getUserByToken(token);
+    public void verifyEmail(String tokenId) {
+        User user = emailVerificationTokenService.getUserByTokenId(tokenId);
         user.setEmailVerifiedAt(LocalDateTime.now());
         userRepository.save(user);
 
