@@ -66,8 +66,11 @@ public class AuthService {
 
     public TokenResponse login(String email, String password) {
         String badCredentialsMessage = messageSourceService.get("bad_credentials");
-        userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+        if (user.getEmailVerifiedAt() == null) {
+            throw new ResourceNotFoundException(messageSourceService.get("email_not_verified"));
+        }
 
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(email, password);
