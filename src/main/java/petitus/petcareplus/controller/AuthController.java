@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.auth.LoginRequest;
@@ -15,7 +16,7 @@ import petitus.petcareplus.service.AuthService;
 import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.UserService;
 
-@RestController
+@Controller
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
@@ -57,13 +58,30 @@ public class AuthController {
                                 .build());
         }
 
-        @GetMapping("/email-verification/{token}")
+        @GetMapping("/email-verification/{tokenId}")
         public ResponseEntity<SuccessResponse> verifyEmail(
-                        @PathVariable final String token) {
-                userService.verifyEmail(token);
+                        @PathVariable final String tokenId) {
+                userService.verifyEmail(tokenId);
 
+                return ResponseEntity
+                                .status(HttpStatus.FOUND)
+                                .header("Location", "/auth/verified")
+                                .body(
+                                                SuccessResponse.builder()
+                                                                .message(messageSourceService.get("email_verified"))
+                                                                .build());
+        }
+
+        @PostMapping("/resend-email-verification")
+        public ResponseEntity<SuccessResponse> resendEmailVerification() {
+                userService.resendEmailVerificationMail();
                 return ResponseEntity.ok(SuccessResponse.builder()
-                                .message(messageSourceService.get("email_verified"))
+                                .message(messageSourceService.get("email_verification_resent"))
                                 .build());
+        }
+
+        @GetMapping("/verified")
+        public String showVerifiedPage() {
+                return "verified";
         }
 }
