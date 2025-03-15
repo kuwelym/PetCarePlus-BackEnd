@@ -78,6 +78,14 @@ public class AuthController {
                 );
     }
 
+    @PostMapping("/resend-email-verification")
+    public ResponseEntity<SuccessResponse> resendEmailVerification() {
+        userService.resendEmailVerificationMail();
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .message(messageSourceService.get("email_verification_resent"))
+                .build());
+    }
+
     @GetMapping("/verified")
     public String showVerifiedPage() {
         return "verified";
