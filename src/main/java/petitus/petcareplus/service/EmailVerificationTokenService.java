@@ -55,8 +55,8 @@ public class EmailVerificationTokenService {
         return emailVerificationTokenRepository.save(emailVerificationToken);
     }
 
-    public User getUserByToken(String token) {
-        EmailVerificationToken emailVerificationToken = emailVerificationTokenRepository.findByToken(token)
+    public User getUserByTokenId(String tokenId) {
+        EmailVerificationToken emailVerificationToken = emailVerificationTokenRepository.findById(UUID.fromString(tokenId))
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("not_found_with_param",
                         new String[]{messageSourceService.get("token")})));
 
