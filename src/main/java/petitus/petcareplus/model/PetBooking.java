@@ -30,5 +30,5 @@ public class PetBooking {
     @ManyToOne
     @MapsId("serviceId")
     @JoinColumn(name = "service_id")
-    private PetService service;
+    private DefaultService service;
 }

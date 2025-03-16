@@ -30,5 +30,5 @@ public class ServiceBooking {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("serviceId")
     @JoinColumn(name = "service_id")
-    private PetService service;
+    private DefaultService service;
 }

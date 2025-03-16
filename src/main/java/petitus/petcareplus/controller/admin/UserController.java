@@ -1,5 +1,8 @@
 package petitus.petcareplus.controller.admin;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.*;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import petitus.petcareplus.controller.BaseController;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
 import petitus.petcareplus.dto.response.PaginationResponse;
@@ -39,6 +41,8 @@ public class UserController extends BaseController {
         private final MessageSourceService messageSourceService;
 
         @GetMapping
+        @Operation(tags = {
+                        "User Profile" }, summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<PaginationResponse<UserResponse>> list(
                         @RequestParam(required = false) final List<String> roles,
 
@@ -84,11 +88,16 @@ public class UserController extends BaseController {
         }
 
         @GetMapping("/{id}")
+        @Operation(tags = {
+                        "User Profile" }, summary = "Get an user", description = "API để lấy thông tin một người dùng", security = {
+                                        @SecurityRequirement(name = "bearerAuth") })
         public ResponseEntity<UserResponse> get(@PathVariable final String id) throws BadRequestException {
                 return ResponseEntity.ok(UserResponse.convert(userService.findById(id)));
         }
 
         @PutMapping("/{id}")
+        @Operation(tags = {
+                        "User Profile" }, summary = "Update information user", description = "Cập nhật thông tin người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<UserResponse> update(@PathVariable final String id,
                         @RequestBody @Valid final UpdateUserRequest user) throws BindException {
                 return ResponseEntity.ok(UserResponse.convert(userService.update(id, user)));

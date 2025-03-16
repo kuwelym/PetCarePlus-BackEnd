@@ -9,7 +9,7 @@ import petitus.petcareplus.dto.request.service.ServiceRequest;
 import petitus.petcareplus.dto.response.service.ServiceResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
-import petitus.petcareplus.model.PetService;
+import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.repository.ServiceRepository;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class ServiceService {
     }
 
     public ServiceResponse getServiceById(UUID id) {
-        PetService service = serviceRepository.findById(id)
+        DefaultService service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
         return mapToServiceResponse(service);
     }
@@ -40,20 +40,20 @@ public class ServiceService {
             throw new BadRequestException("Service name already exists");
         }
 
-        PetService service = PetService.builder()
+        DefaultService service = DefaultService.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .iconUrl(request.getIconUrl())
                 .basePrice(request.getBasePrice())
                 .build();
 
-        PetService savedService = serviceRepository.save(service);
+        DefaultService savedService = serviceRepository.save(service);
         return mapToServiceResponse(savedService);
     }
 
     @Transactional
     public ServiceResponse updateService(UUID id, ServicePatchRequest request) {
-        PetService service = serviceRepository.findById(id)
+        DefaultService service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
         // Check if updated name conflicts with another service
@@ -79,7 +79,7 @@ public class ServiceService {
             service.setBasePrice(request.getBasePrice());
         }
 
-        PetService updatedService = serviceRepository.save(service);
+        DefaultService updatedService = serviceRepository.save(service);
         return mapToServiceResponse(updatedService);
     }
 
@@ -97,7 +97,7 @@ public class ServiceService {
                 .collect(Collectors.toList());
     }
 
-    private ServiceResponse mapToServiceResponse(PetService service) {
+    private ServiceResponse mapToServiceResponse(DefaultService service) {
         return ServiceResponse.builder()
                 .id(service.getId())
                 .name(service.getName())

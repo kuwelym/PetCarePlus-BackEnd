@@ -15,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PetService {
+public class DefaultService {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
