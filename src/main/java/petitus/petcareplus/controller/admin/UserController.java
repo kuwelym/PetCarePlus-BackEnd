@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @Tag(name = "User Management", description = "APIs for managing user profiles, preferences and settings")
 public class UserController extends BaseController {
         private static final String[] SORT_COLUMNS = new String[] { "id", "email", "name", "lastName", "blockedAt",

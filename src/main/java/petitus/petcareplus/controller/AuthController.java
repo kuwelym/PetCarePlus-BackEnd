@@ -23,86 +23,88 @@ import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.UserService;
 
 @Controller
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Các API liên quan đến xác thực tài khoản")
 public class AuthController {
 
-    private final AuthService authService;
+        private final AuthService authService;
 
-    private final MessageSourceService messageSourceService;
-    private final UserService userService;
+        private final MessageSourceService messageSourceService;
+        private final UserService userService;
 
-    @PostMapping("/login")
-    @Operation(tags = { "Authentication" }, summary = "Log in", description = "API để đăng nhập và lấy token")
-    public ResponseEntity<TokenResponse> login(
-            @RequestBody @Valid final LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword()));
-    }
+        @PostMapping("/login")
+        @Operation(tags = { "Authentication" }, summary = "Log in", description = "API để đăng nhập và lấy token")
+        public ResponseEntity<TokenResponse> login(
+                        @RequestBody @Valid final LoginRequest request) {
+                return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword()));
+        }
 
-    @PostMapping("/register")
-    @Operation(tags = { "Authentication" }, summary = "Register Account", description = "API để đăng ký tài khoản mới")
-    public ResponseEntity<SuccessResponse> register(
-            @RequestBody @Valid final RegisterRequest request) throws BindException {
-        authService.register(request);
+        @PostMapping("/register")
+        @Operation(tags = {
+                        "Authentication" }, summary = "Register Account", description = "API để đăng ký tài khoản mới")
+        public ResponseEntity<SuccessResponse> register(
+                        @RequestBody @Valid final RegisterRequest request) throws BindException {
+                authService.register(request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.builder()
-                .message(messageSourceService.get("user_registered"))
-                .build());
-    }
-
-    @GetMapping("/refresh")
-    @Operation(tags = {
-            "Authentication" }, summary = "Refresh Token", description = "API để lấy token mới từ refresh token")
-    public ResponseEntity<TokenResponse> refresh(
-            @RequestBody @Valid final RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
-    }
-
-    @GetMapping("/logout")
-    @Operation(tags = { "Authentication" }, summary = "Log out", description = "API để đăng xuất người dùng")
-    public ResponseEntity<SuccessResponse> logout(
-            @RequestHeader("Authorization") String authorization) {
-        authService.logout(authorization);
-
-        return ResponseEntity.ok(SuccessResponse.builder()
-                .message(messageSourceService.get("user_logged_out"))
-                .build());
-    }
-
-    @GetMapping("/email-verification/{tokenId}")
-    @Operation(tags = { "Authentication" }, summary = "Verify email", description = "API để xác thực email qua token")
-    public ResponseEntity<SuccessResponse> verifyEmail(
-            @PathVariable final String tokenId) {
-        userService.verifyEmail(tokenId);
-
-        return ResponseEntity
-                .status(HttpStatus.FOUND)
-                .header("Location", "/auth/verified")
-                .body(
-                        SuccessResponse.builder()
-                                .message(messageSourceService.get("email_verified"))
+                return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.builder()
+                                .message(messageSourceService.get("user_registered"))
                                 .build());
-    }
+        }
 
-    @PostMapping("/resend-email-verification")
-    public ResponseEntity<SuccessResponse> resendEmailVerification() {
-        userService.resendEmailVerificationMail();
-        return ResponseEntity.ok(SuccessResponse.builder()
-                .message(messageSourceService.get("email_verification_resent"))
-                .build());
-    }
+        @GetMapping("/refresh")
+        @Operation(tags = {
+                        "Authentication" }, summary = "Refresh Token", description = "API để lấy token mới từ refresh token")
+        public ResponseEntity<TokenResponse> refresh(
+                        @RequestBody @Valid final RefreshTokenRequest request) {
+                return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+        }
 
-    @GetMapping("/verified")
-    public String showVerifiedPage() {
-        return "verified";
-    }
+        @GetMapping("/logout")
+        @Operation(tags = { "Authentication" }, summary = "Log out", description = "API để đăng xuất người dùng")
+        public ResponseEntity<SuccessResponse> logout(
+                        @RequestHeader("Authorization") String authorization) {
+                authService.logout(authorization);
 
-    @Operation(tags = {
-            "Authentication" }, summary = "Get current user", description = "API để lấy thông tin user hiện tại", security = @SecurityRequirement(name = "bearerAuth"))
-    @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser(
-            @Parameter(name = "Authorization", description = "JWT token", required = true, in = ParameterIn.HEADER) @RequestHeader("Authorization") String token) {
-        return ResponseEntity.ok(userService.getUser());
-    }
+                return ResponseEntity.ok(SuccessResponse.builder()
+                                .message(messageSourceService.get("user_logged_out"))
+                                .build());
+        }
+
+        @GetMapping("/email-verification/{tokenId}")
+        @Operation(tags = {
+                        "Authentication" }, summary = "Verify email", description = "API để xác thực email qua token")
+        public ResponseEntity<SuccessResponse> verifyEmail(
+                        @PathVariable final String tokenId) {
+                userService.verifyEmail(tokenId);
+
+                return ResponseEntity
+                                .status(HttpStatus.FOUND)
+                                .header("Location", "/auth/verified")
+                                .body(
+                                                SuccessResponse.builder()
+                                                                .message(messageSourceService.get("email_verified"))
+                                                                .build());
+        }
+
+        @PostMapping("/resend-email-verification")
+        public ResponseEntity<SuccessResponse> resendEmailVerification() {
+                userService.resendEmailVerificationMail();
+                return ResponseEntity.ok(SuccessResponse.builder()
+                                .message(messageSourceService.get("email_verification_resent"))
+                                .build());
+        }
+
+        @GetMapping("/verified")
+        public String showVerifiedPage() {
+                return "verified";
+        }
+
+        @Operation(tags = {
+                        "Authentication" }, summary = "Get current user", description = "API để lấy thông tin user hiện tại", security = @SecurityRequirement(name = "bearerAuth"))
+        @GetMapping("/me")
+        public ResponseEntity<User> getCurrentUser(
+                        @Parameter(name = "Authorization", description = "JWT token", required = true, in = ParameterIn.HEADER) @RequestHeader("Authorization") String token) {
+                return ResponseEntity.ok(userService.getUser());
+        }
 }

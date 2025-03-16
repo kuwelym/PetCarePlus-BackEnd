@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("")
 @Tag(name = "Provider Services", description = "APIs for managing provider services")
 public class ProviderServiceController {
     private final ProviderServiceService providerServiceService;
