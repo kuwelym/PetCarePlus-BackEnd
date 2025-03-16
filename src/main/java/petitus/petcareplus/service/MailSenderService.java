@@ -9,6 +9,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -33,6 +34,7 @@ public class MailSenderService {
 
     private final SpringTemplateEngine templateEngine;
 
+    @Async
     public void sendUserEmailVerification(EmailVerificationToken token) {
         User user = token.getUser();
         if (user == null) {

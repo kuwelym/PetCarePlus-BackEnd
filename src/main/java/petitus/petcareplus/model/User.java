@@ -1,8 +1,10 @@
 package petitus.petcareplus.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import petitus.petcareplus.model.profile.Profile;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +25,7 @@ public class User extends AbstractBaseEntity {
     private String email;
 
     @Column(name = "password", nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(name = "name", nullable = false, length = 50)
@@ -40,6 +43,10 @@ public class User extends AbstractBaseEntity {
 
     @Column(name = "blocked_at")
     private LocalDateTime blockedAt;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Profile profile;
 
     public String getFullName() {
         return this.lastName + " " + this.name;
