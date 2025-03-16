@@ -87,6 +87,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, messageSourceService.get("validation_error"), errors);
     }
 
+    @ExceptionHandler(DataExistedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public final ResponseEntity<ErrorResponse> handleDataExistedException(final DataExistedException e) {
+        return build(HttpStatus.CONFLICT, e.getMessage());
+    }
+
     @ExceptionHandler({
             BadRequestException.class,
             MultipartException.class,

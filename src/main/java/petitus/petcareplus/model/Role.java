@@ -3,6 +3,7 @@ package petitus.petcareplus.model;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.NaturalId;
 import petitus.petcareplus.utils.Constants;
 
@@ -17,7 +18,7 @@ import java.util.Set;
 })
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Role extends AbstractBaseEntity {

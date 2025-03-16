@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RequestMapping("/users")
 public class UserController extends BaseController {
-    private static final String[] SORT_COLUMNS = new String[]{"id", "email", "name", "lastName", "blockedAt",
+    private final String[] SORT_COLUMNS = new String[]{"id", "email", "name", "lastName", "blockedAt",
             "createdAt", "updatedAt", "deletedAt"};
 
     private final UserService userService;
