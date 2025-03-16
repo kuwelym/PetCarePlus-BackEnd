@@ -11,7 +11,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
 @Data
 @Entity
 @Table(name = "provider_services")
@@ -30,7 +29,7 @@ public class ProviderService {
     @ManyToOne
     @MapsId("serviceId")
     @JoinColumn(name = "service_id")
-    private PetService service;
+    private DefaultService service;
 
     @Column(name = "custom_price", precision = 8, scale = 2, nullable = false)
     private BigDecimal customPrice;

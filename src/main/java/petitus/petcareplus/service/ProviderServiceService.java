@@ -52,7 +52,7 @@ public class ProviderServiceService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Provider not found with id: " + providerId));
 
-                petitus.petcareplus.model.PetService service = serviceRepository.findById(request.getServiceId())
+                petitus.petcareplus.model.DefaultService service = serviceRepository.findById(request.getServiceId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Service not found with id: " + request.getServiceId()));
 

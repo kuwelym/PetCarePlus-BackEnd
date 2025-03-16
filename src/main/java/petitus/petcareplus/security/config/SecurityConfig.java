@@ -28,62 +28,62 @@ import petitus.petcareplus.security.jwt.JwtAuthenticationFilter;
 @RequiredArgsConstructor
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-        private final UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
 
-        @Qualifier("delegatedAuthenticationEntryPoint")
-        private final AuthenticationEntryPoint authenticationEntryPoint;
+    @Qualifier("delegatedAuthenticationEntryPoint")
+    private final AuthenticationEntryPoint authenticationEntryPoint;
 
-        private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http.csrf(AbstractHttpConfigurer::disable)
-                                .cors(Customizer.withDefaults())
-                                .authorizeHttpRequests(request -> request.requestMatchers("/api/auth/**").permitAll()
-                                                // those permissions are just for testing
-                                                // replace things belonged to ADMIN only later on
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/roles/**")
-                                                .hasAuthority("USER")
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/users/**")
-                                                .hasAuthority("USER")
-                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
-                                                                "/v3/api-docs/**")
-                                                .permitAll()
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(request -> request.requestMatchers("/auth/me").authenticated()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/webjars/**",
+                                "/api-docs/**")
+                        .permitAll()
 
-                                                .anyRequest().authenticated())
-                                .sessionManagement(manager -> manager
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authenticationProvider(authenticationProvider())
-                                .addFilterBefore(
-                                                jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                                .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint)
-                                                .accessDeniedHandler(customAccessDeniedHandler));
+                        // Các route yêu cầu quyền USER
+                        .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
+                        .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER")
+                        .requestMatchers("/pets/**").authenticated()
+                        .requestMatchers("/notifications/**").authenticated()
 
-                return http.build();
-        }
+                        .anyRequest().authenticated())
+                .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(
+                        jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler));
 
-        @Bean
-        public AuthenticationProvider authenticationProvider() {
-                DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-                provider.setUserDetailsService(userDetailsService);
-                provider.setPasswordEncoder(passwordEncoder());
-                return provider;
-        }
+        return http.build();
+    }
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
 
-        @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-                        throws Exception {
-                return authenticationConfiguration.getAuthenticationManager();
-        }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
 }
