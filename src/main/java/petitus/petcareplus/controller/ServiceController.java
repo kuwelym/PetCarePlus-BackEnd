@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/services")
+@RequestMapping("/services")
 @RequiredArgsConstructor
 @Tag(name = "Services", description = "APIs for managing services")
 public class ServiceController {

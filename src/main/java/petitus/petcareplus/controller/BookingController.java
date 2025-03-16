@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/bookings")
 @RequiredArgsConstructor
 @Tag(name = "Booking Management", description = "APIs for creating, updating and managing bookings")
 public class BookingController {
