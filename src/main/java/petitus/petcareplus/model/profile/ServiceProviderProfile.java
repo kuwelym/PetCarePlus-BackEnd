@@ -3,7 +3,6 @@ package petitus.petcareplus.model.profile;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import petitus.petcareplus.model.AbstractBaseEntity;
@@ -15,7 +14,7 @@ import java.util.Set;
 @Table(name = "service_provider_profiles")
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServiceProviderProfile extends AbstractBaseEntity{

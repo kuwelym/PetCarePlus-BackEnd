@@ -2,7 +2,6 @@ package petitus.petcareplus.model.profile;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import petitus.petcareplus.model.AbstractBaseEntity;
@@ -15,7 +14,7 @@ import java.time.LocalDate;
 @Table(name = "profiles")
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Profile extends AbstractBaseEntity {
