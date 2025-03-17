@@ -83,7 +83,7 @@ public class BookingService {
             Pet pet = petRepository.findById(petServiceReq.getPetId())
                     .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("pet_not_found")));
 
-            if (!pet.getId().equals(userId)) {
+            if (!pet.getUserId().equals(userId)) {
                 throw new ForbiddenException(messageSourceService.get("pet_not_owned"));
             }
 
