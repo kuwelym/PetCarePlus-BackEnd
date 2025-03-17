@@ -31,6 +31,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
 import petitus.petcareplus.dto.response.DetailedErrorResponse;
 import petitus.petcareplus.dto.response.ErrorResponse;
 import petitus.petcareplus.service.MessageSourceService;
@@ -46,21 +47,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final MessageSourceService messageSourceService;
 
     @Override
-    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ErrorResponse.builder()
                 .message(messageSourceService.get("method_not_supported"))
                 .build());
     }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
                 .message(messageSourceService.get("malformed_json_request"))
                 .build());
     }
 
     @Override
-    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getAllValidationResults().forEach(validationResult -> {
             validationResult.getResolvableErrors().forEach(error -> {
@@ -125,7 +129,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             BadCredentialsException.class
     })
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public final ResponseEntity<ErrorResponse> handleAuthenticationCredentialsNotFoundException(final AuthenticationCredentialsNotFoundException e) {
+    public final ResponseEntity<ErrorResponse> handleAuthenticationCredentialsNotFoundException(
+            final AuthenticationCredentialsNotFoundException e) {
         return build(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
@@ -148,7 +153,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> errors = extractErrors(ex.getBindingResult());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(DetailedErrorResponse.builder()
                 .message(messageSourceService.get("validation_error"))
@@ -167,8 +173,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ResponseEntity<ErrorResponse> build(final HttpStatus httpStatus,
-                                                final String message,
-                                                final Map<String, String> errors) {
+            final String message,
+            final Map<String, String> errors) {
         if (!errors.isEmpty()) {
             return ResponseEntity.status(httpStatus).body(DetailedErrorResponse.builder()
                     .message(message)
@@ -184,4 +190,5 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<ErrorResponse> build(final HttpStatus httpStatus, final String message) {
         return build(httpStatus, message, new HashMap<>());
     }
+
 }
