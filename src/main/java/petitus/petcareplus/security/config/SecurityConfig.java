@@ -23,7 +23,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import petitus.petcareplus.security.jwt.JwtAuthenticationFilter;
 
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -42,27 +41,29 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(request ->
-                        request.requestMatchers("/auth/**").permitAll()
-                                // those permissions are just for testing
-                                // replace things belonged to ADMIN only later on
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/roles/**").hasAuthority("USER")
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/users/**").hasAuthority("USER")
+                .authorizeHttpRequests(request -> request.requestMatchers("/auth/me").authenticated()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/webjars/**",
+                                "/api-docs/**")
+                        .permitAll()
 
-                        .anyRequest().authenticated()
-                )
+                        // Các route yêu cầu quyền USER
+                        .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
+                        .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER")
+                        .requestMatchers("/pets/**").authenticated()
+                        .requestMatchers("/notifications/**").authenticated()
+
+                        .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(
                         jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(handler -> handler.authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(customAccessDeniedHandler)
-                )
-        ;
+                        .accessDeniedHandler(customAccessDeniedHandler));
 
         return http.build();
     }
@@ -81,7 +82,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }
