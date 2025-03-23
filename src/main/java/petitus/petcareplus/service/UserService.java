@@ -16,15 +16,16 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
 import petitus.petcareplus.event.UserEmailVerificationSendEvent;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.EmailVerificationToken;
+import petitus.petcareplus.model.User;
+import petitus.petcareplus.model.spec.UserFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.UserCriteria;
-import petitus.petcareplus.model.spec.UserFilterSpecification;
-import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.PageRequestBuilder;
@@ -133,8 +134,13 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public void resendEmailVerificationMail() {
-        User user = getUser();
+    public void resendEmailVerificationMail(ResendEmailVerificationRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadRequestException(messageSourceService.get(
+                        "user_not_found_with_email",
+                        new String[]{request.getEmail()}
+                )));
+
         if (user.getEmailVerifiedAt() != null) {
             throw new BadRequestException(messageSourceService.get("your_email_already_verified"));
         }
