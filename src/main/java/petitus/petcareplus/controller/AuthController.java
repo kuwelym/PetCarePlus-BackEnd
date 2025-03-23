@@ -71,12 +71,12 @@ public class AuthController {
                                 .build());
         }
 
-        @GetMapping("/email-verification/{tokenId}")
+        @GetMapping("/email-verification/{token}")
         @Operation(tags = {
                         "Authentication" }, summary = "Verify email", description = "API để xác thực email qua token")
         public ResponseEntity<SuccessResponse> verifyEmail(
-                        @PathVariable final String tokenId) {
-                userService.verifyEmail(tokenId);
+                        @PathVariable final String token) {
+                userService.verifyEmail(token);
 
                 return ResponseEntity
                                 .status(HttpStatus.FOUND)
@@ -99,13 +99,13 @@ public class AuthController {
                                 .build());
         }
 
-        @GetMapping("/cancel-registration/{email}")
+        @GetMapping("/cancel-registration/{token}")
         @Operation(tags = { "Authentication" }, summary = "Cancel Registration",
                 description = "API để hủy đăng ký nếu email bị sử dụng mà không có sự đồng ý.")
         public ResponseEntity<SuccessResponse> cancelRegistration(
-                @PathVariable String email) {
+                @PathVariable String token) {
 
-                boolean isCanceled = userService.cancelUnverifiedRegistration(email);
+                boolean isCanceled = userService.cancelUnverifiedRegistration(token);
 
                 if (isCanceled) {
                         return ResponseEntity.status(HttpStatus.FOUND)

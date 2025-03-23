@@ -42,6 +42,8 @@ public class UserService implements UserDetailsService {
 
     private final RateLimitService rateLimitService;
 
+    private final CipherService cipherService;
+
     private final EmailVerificationTokenService emailVerificationTokenService;
 
     private final ApplicationEventPublisher eventPublisher;
@@ -171,7 +173,9 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void verifyEmail(String tokenId) {
+    public void verifyEmail(String token) {
+        String tokenId = cipherService.decryptForURL(token);
+
         User user = emailVerificationTokenService.getUserByTokenId(tokenId);
         user.setEmailVerifiedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -184,7 +188,9 @@ public class UserService implements UserDetailsService {
         eventPublisher.publishEvent(new UserEmailVerificationSendEvent(this, emailVerificationToken));
     }
 
-    public boolean cancelUnverifiedRegistration(String email) {
+    public boolean cancelUnverifiedRegistration(String token) {
+        String email = cipherService.decryptForURL(token);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException(messageSourceService.get(
                         "user_not_found_with_email",

@@ -30,6 +30,8 @@ public class MailSenderService {
 
     private final MessageSourceService messageSourceService;
 
+    private final CipherService cipherService;
+
     private final JavaMailSender mailSender;
 
     private final SpringTemplateEngine templateEngine;
@@ -40,12 +42,14 @@ public class MailSenderService {
         if (user == null) {
             throw new ResourceNotFoundException(messageSourceService.get("user_token_null"));
         }
+        String verificationLink = "http://localhost:8080/auth/email-verification/" + cipherService.encryptForURL(String.valueOf(token.getId()));
+        String cancelRegistrationLink = "http://localhost:8080/auth/cancel-registration/" + cipherService.encryptForURL(user.getEmail());
 
         Context ctx = createContext();
         ctx.setVariable("name", user.getName());
         ctx.setVariable("fullName", user.getFullName());
-        ctx.setVariable("verificationLink", "http://localhost:8080/auth/email-verification/" + token.getId());
-        ctx.setVariable("cancelRegistrationLink","http://localhost:8080/auth/cancel-registration/" + user.getEmail());
+        ctx.setVariable("verificationLink", verificationLink);
+        ctx.setVariable("cancelRegistrationLink", cancelRegistrationLink);
 
         String subject = messageSourceService.get("email_verification_sent");
 

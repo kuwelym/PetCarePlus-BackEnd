@@ -36,7 +36,7 @@ public class EmailVerificationTokenService {
      */
     public EmailVerificationToken create(User user) {
         String newToken = RandomStringUtils.randomNumeric(EMAIL_VERIFICATION_TOKEN_LENGTH);
-        Date expirationDate = Date.from(Instant.now().plusSeconds(expiresIn));
+        Date expirationDate = Date.from(Instant.now().plusMillis(expiresIn));
         Optional<EmailVerificationToken> oldToken = emailVerificationTokenRepository.findByUserId(user.getId());
         EmailVerificationToken emailVerificationToken;
 
