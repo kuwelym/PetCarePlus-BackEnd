@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.auth.LoginRequest;
 import petitus.petcareplus.dto.request.auth.RefreshTokenRequest;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
+import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.model.User;
@@ -88,8 +89,12 @@ public class AuthController {
         }
 
         @PostMapping("/resend-email-verification")
-        public ResponseEntity<SuccessResponse> resendEmailVerification() {
-                userService.resendEmailVerificationMail();
+        @Operation(tags = {
+                        "Authentication" }, summary = "Resend email verification", description = "API để gửi lại email xác thực")
+        public ResponseEntity<SuccessResponse> resendEmailVerification(
+                @RequestBody @Valid final ResendEmailVerificationRequest request
+        ) {
+                userService.resendEmailVerificationMail(request);
                 return ResponseEntity.ok(SuccessResponse.builder()
                                 .message(messageSourceService.get("email_verification_resent"))
                                 .build());
