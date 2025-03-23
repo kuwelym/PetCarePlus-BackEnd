@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.auth.LoginRequest;
 import petitus.petcareplus.dto.request.auth.RefreshTokenRequest;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
+import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.model.User;
@@ -29,7 +30,6 @@ import petitus.petcareplus.service.UserService;
 public class AuthController {
 
         private final AuthService authService;
-
         private final MessageSourceService messageSourceService;
         private final UserService userService;
 
@@ -71,12 +71,12 @@ public class AuthController {
                                 .build());
         }
 
-        @GetMapping("/email-verification/{tokenId}")
+        @GetMapping("/email-verification/{token}")
         @Operation(tags = {
                         "Authentication" }, summary = "Verify email", description = "API để xác thực email qua token")
         public ResponseEntity<SuccessResponse> verifyEmail(
-                        @PathVariable final String tokenId) {
-                userService.verifyEmail(tokenId);
+                        @PathVariable final String token) {
+                userService.verifyEmail(token);
 
                 return ResponseEntity
                                 .status(HttpStatus.FOUND)
@@ -88,11 +88,48 @@ public class AuthController {
         }
 
         @PostMapping("/resend-email-verification")
-        public ResponseEntity<SuccessResponse> resendEmailVerification() {
-                userService.resendEmailVerificationMail();
+        @Operation(tags = {
+                        "Authentication" }, summary = "Resend email verification", description = "API để gửi lại email xác thực (có giới hạn tần suất)")
+        public ResponseEntity<SuccessResponse> resendEmailVerification(
+                @RequestBody @Valid final ResendEmailVerificationRequest request
+        ) {
+                userService.resendEmailVerificationMail(request);
                 return ResponseEntity.ok(SuccessResponse.builder()
                                 .message(messageSourceService.get("email_verification_resent"))
                                 .build());
+        }
+
+        @GetMapping("/cancel-registration/{token}")
+        @Operation(tags = { "Authentication" }, summary = "Cancel Registration",
+                description = "API để hủy đăng ký nếu email bị sử dụng mà không có sự đồng ý.")
+        public ResponseEntity<SuccessResponse> cancelRegistration(
+                @PathVariable String token) {
+
+                boolean isCanceled = userService.cancelUnverifiedRegistration(token);
+
+                if (isCanceled) {
+                        return ResponseEntity.status(HttpStatus.FOUND)
+                                .header("Location", "/auth/registration-cancelled")
+                                .body(SuccessResponse.builder()
+                                        .message(messageSourceService.get("registration_cancelled"))
+                                        .build());
+                } else {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .header("Location", "/auth/registration-cancel-failed")
+                                .body(SuccessResponse.builder()
+                                        .message(messageSourceService.get("registration_cancel_failed"))
+                                        .build());
+                }
+        }
+
+        @GetMapping("/registration-cancelled")
+        public String showRegistrationCancelledPage() {
+                return "registration-cancelled";
+        }
+
+        @GetMapping("/registration-cancel-failed")
+        public String showRegistrationCancelFailedPage() {
+                return "registration-cancel-failed";
         }
 
         @GetMapping("/verified")

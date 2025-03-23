@@ -16,15 +16,16 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
 import petitus.petcareplus.event.UserEmailVerificationSendEvent;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.EmailVerificationToken;
+import petitus.petcareplus.model.User;
+import petitus.petcareplus.model.spec.UserFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.UserCriteria;
-import petitus.petcareplus.model.spec.UserFilterSpecification;
-import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.PageRequestBuilder;
@@ -38,6 +39,10 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
 
     private final MessageSourceService messageSourceService;
+
+    private final RateLimitService rateLimitService;
+
+    private final CipherService cipherService;
 
     private final EmailVerificationTokenService emailVerificationTokenService;
 
@@ -133,8 +138,16 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public void resendEmailVerificationMail() {
-        User user = getUser();
+    public void resendEmailVerificationMail(ResendEmailVerificationRequest request) {
+        if (!rateLimitService.canResendVerification(request.getEmail())) {
+            throw new BadRequestException(messageSourceService.get("resend_email_verification_rate_limit"));
+        }
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadRequestException(messageSourceService.get(
+                        "user_not_found_with_email",
+                        new String[]{request.getEmail()}
+                )));
+
         if (user.getEmailVerifiedAt() != null) {
             throw new BadRequestException(messageSourceService.get("your_email_already_verified"));
         }
@@ -160,7 +173,9 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void verifyEmail(String tokenId) {
+    public void verifyEmail(String token) {
+        String tokenId = cipherService.decryptForURL(token);
+
         User user = emailVerificationTokenService.getUserByTokenId(tokenId);
         user.setEmailVerifiedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -173,4 +188,20 @@ public class UserService implements UserDetailsService {
         eventPublisher.publishEvent(new UserEmailVerificationSendEvent(this, emailVerificationToken));
     }
 
+    public boolean cancelUnverifiedRegistration(String token) {
+        String email = cipherService.decryptForURL(token);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException(messageSourceService.get(
+                        "user_not_found_with_email",
+                        new String[]{email}
+                )));
+
+        // Only delete if the user has NOT verified their email
+        if (user.getEmailVerifiedAt() == null) {
+            userRepository.delete(user);
+            return true;
+        }
+        return false;
+    }
 }
