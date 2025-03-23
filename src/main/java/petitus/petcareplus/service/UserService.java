@@ -40,6 +40,8 @@ public class UserService implements UserDetailsService {
 
     private final MessageSourceService messageSourceService;
 
+    private final RateLimitService rateLimitService;
+
     private final EmailVerificationTokenService emailVerificationTokenService;
 
     private final ApplicationEventPublisher eventPublisher;
@@ -135,6 +137,9 @@ public class UserService implements UserDetailsService {
     }
 
     public void resendEmailVerificationMail(ResendEmailVerificationRequest request) {
+        if (!rateLimitService.canResendVerification(request.getEmail())) {
+            throw new BadRequestException(messageSourceService.get("resend_email_verification_rate_limit"));
+        }
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadRequestException(messageSourceService.get(
                         "user_not_found_with_email",
@@ -179,4 +184,18 @@ public class UserService implements UserDetailsService {
         eventPublisher.publishEvent(new UserEmailVerificationSendEvent(this, emailVerificationToken));
     }
 
+    public boolean cancelUnverifiedRegistration(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException(messageSourceService.get(
+                        "user_not_found_with_email",
+                        new String[]{email}
+                )));
+
+        // Only delete if the user has NOT verified their email
+        if (user.getEmailVerifiedAt() == null) {
+            userRepository.delete(user);
+            return true;
+        }
+        return false;
+    }
 }

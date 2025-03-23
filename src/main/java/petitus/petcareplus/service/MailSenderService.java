@@ -45,6 +45,7 @@ public class MailSenderService {
         ctx.setVariable("name", user.getName());
         ctx.setVariable("fullName", user.getFullName());
         ctx.setVariable("verificationLink", "http://localhost:8080/auth/email-verification/" + token.getId());
+        ctx.setVariable("cancelRegistrationLink","http://localhost:8080/auth/cancel-registration/" + user.getEmail());
 
         String subject = messageSourceService.get("email_verification_sent");
 
