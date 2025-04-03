@@ -38,14 +38,14 @@ public class ServiceController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Create a new service")
+    @Operation(summary = "Create a new service - Admin only")
     public ResponseEntity<ServiceResponse> createService(@Valid @RequestBody ServiceRequest request) {
         return new ResponseEntity<>(serviceService.createService(request), HttpStatus.CREATED);
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Update a service")
+    @Operation(summary = "Update a service - Admin only")
     public ResponseEntity<ServiceResponse> updateService(@PathVariable UUID id,
             @Valid @RequestBody ServicePatchRequest request) {
         return ResponseEntity.ok(serviceService.updateService(id, request));
@@ -53,7 +53,7 @@ public class ServiceController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Delete a service")
+    @Operation(summary = "Delete a service - Admin only")
     public ResponseEntity<Void> deleteService(@PathVariable UUID id) {
         serviceService.deleteService(id);
         return ResponseEntity.noContent().build();

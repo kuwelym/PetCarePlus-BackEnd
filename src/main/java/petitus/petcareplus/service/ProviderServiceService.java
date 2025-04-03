@@ -7,9 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
 import petitus.petcareplus.dto.response.service.ProviderServiceResponse;
+import petitus.petcareplus.exceptions.BadRequestException;
+import petitus.petcareplus.exceptions.ForbiddenException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
+import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.model.ProviderService;
-import petitus.petcareplus.model.ProviderServiceId;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceRepository;
@@ -34,6 +36,22 @@ public class ProviderServiceService {
                                 .collect(Collectors.toList());
         }
 
+        public ProviderServiceResponse getProviderServiceById(UUID id) {
+                ProviderService providerService = providerServiceRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Provider service not found with id: " + id));
+                return mapToProviderServiceResponse(providerService);
+        }
+
+        public ProviderServiceResponse getProviderServiceByProviderAndService(UUID providerId, UUID serviceId) {
+                ProviderService providerService = providerServiceRepository
+                                .findByProviderIdAndServiceId(providerId, serviceId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Provider service not found with provider id: " + providerId
+                                                                + " and service id: " + serviceId));
+                return mapToProviderServiceResponse(providerService);
+        }
+
         public List<ProviderServiceResponse> getProviderServices(UUID providerId) {
                 return providerServiceRepository.findActiveServicesByProviderId(providerId).stream()
                                 .map(this::mapToProviderServiceResponse)
@@ -52,14 +70,17 @@ public class ProviderServiceService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Provider not found with id: " + providerId));
 
-                petitus.petcareplus.model.DefaultService service = serviceRepository.findById(request.getServiceId())
+                DefaultService service = serviceRepository.findById(request.getServiceId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Service not found with id: " + request.getServiceId()));
 
-                ProviderServiceId id = new ProviderServiceId(providerId, request.getServiceId());
+                // Check if provider already offers this service
+                if (providerServiceRepository.findByProviderIdAndServiceId(providerId, request.getServiceId())
+                                .isPresent()) {
+                        throw new BadRequestException("Provider already offers this service");
+                }
 
                 ProviderService providerService = ProviderService.builder()
-                                .id(id)
                                 .provider(provider)
                                 .service(service)
                                 .customPrice(request.getCustomPrice() != null ? request.getCustomPrice()
@@ -75,12 +96,17 @@ public class ProviderServiceService {
         }
 
         @Transactional
-        public ProviderServiceResponse updateProviderService(UUID providerId, UUID serviceId,
+        public ProviderServiceResponse updateProviderService(UUID id, UUID currentUserId,
                         ProviderServicePatchRequest request) {
-                ProviderServiceId id = new ProviderServiceId(providerId, serviceId);
 
-                ProviderService providerService = providerServiceRepository.findById(id)
+                ProviderService providerService = providerServiceRepository
+                                .findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Provider service not found"));
+
+                // Ensure only the owner can update
+                if (!providerService.getProvider().getId().equals(currentUserId)) {
+                        throw new ForbiddenException("You are not authorized to update this service");
+                }
 
                 if (request.getCustomPrice() != null) {
                         providerService.setCustomPrice(request.getCustomPrice());
@@ -95,12 +121,16 @@ public class ProviderServiceService {
         }
 
         @Transactional
-        public void removeServiceFromProvider(UUID providerId, UUID serviceId) {
-                ProviderServiceId id = new ProviderServiceId(providerId, serviceId);
+        public void removeServiceFromProvider(UUID id, UUID currentUserId) {
 
-                ProviderService providerService = providerServiceRepository.findById(id)
+                ProviderService providerService = providerServiceRepository
+                                .findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Provider service not found"));
 
+                // Ensure only the owner can delete
+                if (!providerService.getProvider().getId().equals(currentUserId)) {
+                        throw new ForbiddenException("You are not authorized to delete this service");
+                }
                 // Soft delete
                 providerService.setDeletedAt(LocalDateTime.now());
                 providerServiceRepository.save(providerService);
@@ -108,6 +138,7 @@ public class ProviderServiceService {
 
         private ProviderServiceResponse mapToProviderServiceResponse(ProviderService providerService) {
                 return ProviderServiceResponse.builder()
+                                .id(providerService.getId())
                                 .providerId(providerService.getProvider().getId())
                                 .serviceId(providerService.getService().getId())
                                 .serviceName(providerService.getService().getName())
