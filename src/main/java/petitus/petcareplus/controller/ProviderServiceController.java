@@ -21,18 +21,24 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("")
+@RequestMapping("/provider-services")
 @Tag(name = "Provider Services", description = "APIs for managing provider services")
 public class ProviderServiceController {
     private final ProviderServiceService providerServiceService;
 
-    @GetMapping("/provider-services")
+    @GetMapping
     @Operation(summary = "Get all provider services")
     public ResponseEntity<List<ProviderServiceResponse>> getAllProviderServices() {
         return ResponseEntity.ok(providerServiceService.getAllProviderServices());
     }
 
-    // @GetMapping("/providers/{providerId}/services")
+    @GetMapping("/{id}")
+    @Operation(summary = "Get a provider service by ID")
+    public ResponseEntity<ProviderServiceResponse> getProviderServiceById(@PathVariable UUID id) {
+        return ResponseEntity.ok(providerServiceService.getProviderServiceById(id));
+    }
+
+    // @GetMapping("/provider/{providerId}")
     // @Operation(summary = "Get all services offered by a provider")
     // public ResponseEntity<List<ProviderServiceResponse>>
     // getProviderServices(@PathVariable UUID providerId) {
@@ -40,7 +46,7 @@ public class ProviderServiceController {
     // ResponseEntity.ok(providerServiceService.getProviderServices(providerId));
     // }
 
-    // @GetMapping("/services/{serviceId}/providers")
+    // @GetMapping("/service/{serviceId}")
     // @Operation(summary = "Get all providers offering a service")
     // public ResponseEntity<List<ProviderServiceResponse>>
     // getProvidersByService(@PathVariable UUID serviceId) {
@@ -48,7 +54,7 @@ public class ProviderServiceController {
     // ResponseEntity.ok(providerServiceService.getProvidersByService(serviceId));
     // }
 
-    @PostMapping("/provider-services")
+    @PostMapping
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Add a service to provider's offerings")
     public ResponseEntity<ProviderServiceResponse> addServiceToProvider(
@@ -60,26 +66,35 @@ public class ProviderServiceController {
                 HttpStatus.CREATED);
     }
 
-    @PatchMapping("/provider-services/{serviceId}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Update a provider's service offering")
     public ResponseEntity<ProviderServiceResponse> updateProviderService(
             @AuthenticationPrincipal JwtUserDetails currentUser,
-            @PathVariable UUID serviceId,
+            @PathVariable UUID id,
             @Valid @RequestBody ProviderServicePatchRequest request) {
         UUID providerId = currentUser.getId();
         return ResponseEntity.ok(
-                providerServiceService.updateProviderService(providerId, serviceId, request));
+                providerServiceService.updateProviderService(id, providerId, request));
     }
 
-    @DeleteMapping("/provider-services/{serviceId}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Remove a service from provider's offerings")
     public ResponseEntity<Void> removeServiceFromProvider(
             @AuthenticationPrincipal JwtUserDetails currentUser,
-            @PathVariable UUID serviceId) {
+            @PathVariable UUID id) {
         UUID providerId = currentUser.getId();
-        providerServiceService.removeServiceFromProvider(providerId, serviceId);
+        providerServiceService.removeServiceFromProvider(id, providerId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/provider/{providerId}/service/{serviceId}")
+    @Operation(summary = "Get specific provider service by provider and service IDs")
+    public ResponseEntity<ProviderServiceResponse> getProviderServiceByProviderAndService(
+            @PathVariable UUID providerId,
+            @PathVariable UUID serviceId) {
+        return ResponseEntity.ok(
+                providerServiceService.getProviderServiceByProviderAndService(providerId, serviceId));
     }
 }
