@@ -10,25 +10,26 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "provider_services")
+@Table(name = "provider_services", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "provider_id", "service_id" }) })
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ProviderService {
-    @EmbeddedId
-    private ProviderServiceId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @ManyToOne
-    @MapsId("providerId")
-    @JoinColumn(name = "provider_id")
+    @JoinColumn(name = "provider_id", nullable = false)
     private User provider;
 
     @ManyToOne
-    @MapsId("serviceId")
-    @JoinColumn(name = "service_id")
+    @JoinColumn(name = "service_id", nullable = false)
     private DefaultService service;
 
     @Column(name = "custom_price", precision = 8, scale = 2, nullable = false)
