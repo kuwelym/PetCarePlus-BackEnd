@@ -50,4 +50,21 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         @Query("SELECT COUNT(b) FROM Booking b WHERE b.deletedAt IS NULL AND b.provider.id = :providerId AND ((b.scheduledStartTime <= :endTime AND b.scheduledEndTime >= :startTime) OR (b.scheduledStartTime <= :startTime AND b.scheduledEndTime >= :startTime)) AND b.status NOT IN ('cancelled', 'completed')")
         Long countOverlappingBookings(@Param("providerId") UUID providerId, @Param("startTime") LocalDateTime startTime,
                         @Param("endTime") LocalDateTime endTime);
+
+        @Query("SELECT COUNT(sb) > 0 FROM ServiceBooking sb WHERE sb.booking.id = :bookingId AND sb.service.id = :serviceId")
+        boolean existsByBookingIdAndServiceId(@Param("bookingId") UUID bookingId, @Param("serviceId") UUID serviceId);
+
+        // Check if the user has completed bookings for the provider service
+        @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+                        "JOIN b.serviceBookings sb " +
+                        "JOIN ProviderService ps ON ps.provider.id = b.provider.id AND ps.service.id = sb.service.id " +
+                        "WHERE b.user.id = :userId " +
+                        "AND ps.id = :providerServiceId " +
+                        "AND b.status = 'COMPLETED' " +
+                        "AND b.deletedAt IS NULL " +
+                        "AND b.actualEndTime > :cutoffDate")
+        boolean hasCompletedEligibleBookingForProviderService(
+                        @Param("userId") UUID userId,
+                        @Param("providerServiceId") UUID providerServiceId,
+                        @Param("cutoffDate") LocalDateTime cutoffDate);
 }

@@ -14,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProviderServiceResponse {
+    private UUID id;
     private UUID providerId;
     private UUID serviceId;
     private String serviceName;

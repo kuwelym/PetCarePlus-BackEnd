@@ -92,8 +92,8 @@ public class BookingService {
                     .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("service_not_found")));
 
             // Verify provider offers this service
-            ProviderService providerService = providerServiceRepository.findById(
-                    new ProviderServiceId(request.getProviderId(), petServiceReq.getServiceId()))
+            ProviderService providerService = providerServiceRepository
+                    .findByProviderIdAndServiceId(request.getProviderId(), petServiceReq.getServiceId())
                     .orElseThrow(
                             () -> new BadRequestException(messageSourceService.get("service_not_offered_by_provider")));
 
@@ -322,7 +322,8 @@ public class BookingService {
         }
 
         if (!validTransitions.contains(newStatus)) {
-            throw new BadRequestException(messageSourceService.get("invalid_status_transition"));
+            throw new BadRequestException(messageSourceService.get("invalid_status_transition",
+                    new Object[] { currentStatus.name(), newStatus.name() }));
         }
     }
 
