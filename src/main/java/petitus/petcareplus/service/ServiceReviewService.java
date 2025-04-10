@@ -2,8 +2,8 @@ package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,8 @@ public class ServiceReviewService {
     private final ServiceProviderProfileRepository serviceProviderProfileRepository;
     private final MessageSourceService messageSourceService;
 
-    private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
+    // private static final Logger logger =
+    // LoggerFactory.getLogger(BookingService.class);
 
     @Transactional
     public ServiceReviewResponse createReview(UUID userId, ServiceReviewRequest request) {

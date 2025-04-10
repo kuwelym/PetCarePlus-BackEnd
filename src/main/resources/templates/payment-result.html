@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kết quả thanh toán</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(to right, #74ebd5, #acb6e5);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        margin: 0;
+      }
+
+      .card {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        max-width: 600px;
+        width: 100%;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        text-align: center;
+      }
+
+      .status-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+      }
+
+      .success {
+        color: #4caf50;
+      }
+
+      .fail {
+        color: #f44336;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+      }
+
+      .info {
+        text-align: left;
+        margin-top: 30px;
+      }
+
+      .info p {
+        margin: 10px 0;
+        font-size: 16px;
+      }
+
+      .btn {
+        display: inline-block;
+        margin-top: 30px;
+        padding: 12px 24px;
+        background-color: #008cba;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background 0.3s ease;
+      }
+
+      .btn:hover {
+        background-color: #0072a0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div
+        class="status-icon success"
+        th:if="${status.equals('COMPLETED')}"
+        th:text="'✔️'"
+      ></div>
+      <div
+        class="status-icon fail"
+        th:unless="${status.equals('COMPLETED')}"
+        th:text="'❌'"
+      ></div>
+
+      <h2 th:if="${status.equals('COMPLETED')}" class="success">
+        Thanh toán thành công!
+      </h2>
+      <h2 th:unless="${status.equals('COMPLETED')}" class="fail">
+        Thanh toán thất bại!
+      </h2>
+
+      <div class="info">
+        <p>
+          <strong>Mã đơn hàng:</strong> <span th:text="${orderCode}"></span>
+        </p>
+        <p>
+          <strong>Số tiền:</strong> <span th:text="${amount} + ' VND'"></span>
+        </p>
+        <p><strong>Ngân hàng:</strong> <span th:text="${bankCode}"></span></p>
+        <p><strong>Trạng thái:</strong> <span th:text="${status}"></span></p>
+        <p th:if="${message != null}">
+          <strong>Thông báo:</strong> <span th:text="${message}"></span>
+        </p>
+      </div>
+
+      <a href="/" class="btn">⬅️ Quay lại Trang chủ</a>
+    </div>
+  </body>
+</html>

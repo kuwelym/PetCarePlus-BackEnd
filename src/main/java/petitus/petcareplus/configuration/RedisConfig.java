@@ -22,6 +22,6 @@ public class RedisConfig {
 
     @Bean
     public ApplicationRunner clearRedisOnStartup(RedisTemplate<String, Object> redisTemplate) {
-        return args -> redisTemplate.getConnectionFactory().getConnection().flushDb();
+        return args -> redisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
     }
 }
