@@ -11,7 +11,7 @@ import petitus.petcareplus.dto.request.booking.BookingStatusUpdateRequest;
 import petitus.petcareplus.dto.request.booking.PetServiceBookingRequest;
 import petitus.petcareplus.dto.response.booking.BookingPetServiceResponse;
 import petitus.petcareplus.dto.response.booking.BookingResponse;
-import petitus.petcareplus.enums.BookingStatus;
+import petitus.petcareplus.utils.enums.BookingStatus;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ForbiddenException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;

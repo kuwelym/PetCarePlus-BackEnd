@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import petitus.petcareplus.enums.BookingStatus;
+import petitus.petcareplus.utils.enums.BookingStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
