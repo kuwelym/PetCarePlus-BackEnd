@@ -2,7 +2,7 @@ package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -17,8 +17,10 @@ import petitus.petcareplus.dto.response.payment.PaymentResponse;
 import petitus.petcareplus.dto.response.payment.PaymentUrlResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.PaymentService;
+import petitus.petcareplus.utils.VnpayUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -37,6 +39,16 @@ public class PaymentController {
             @Valid @RequestBody CreatePaymentRequest request) {
         PaymentUrlResponse response = paymentService.createVnPayUrl(userDetails.getId(), request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/vnpay-ipn")
+    @Operation(summary = "VNPAY IPN URL", description = "Handle the IPN from VNPAY payment gateway")
+    public ResponseEntity<Map<String, String>> vnpayIpn(HttpServletRequest request) {
+
+        Map<String, String> params = VnpayUtils.extractRawVnpParams(request.getQueryString());
+
+        ResponseEntity<Map<String, String>> response = paymentService.handleIPNUrl(params);
+        return response;
     }
 
     // @GetMapping("/vnpay-return")

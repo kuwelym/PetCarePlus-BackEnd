@@ -52,6 +52,7 @@ public class SecurityConfig {
                                 "/api-docs/**")
                         .permitAll()
                         .requestMatchers("/payments/vnpay-return").permitAll()
+                        .requestMatchers("/payments/vnpay-ipn").permitAll()
 
                         // Các route yêu cầu quyền USER
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")

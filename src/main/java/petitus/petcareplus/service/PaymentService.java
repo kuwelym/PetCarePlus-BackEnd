@@ -2,6 +2,8 @@ package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -258,6 +260,72 @@ public class PaymentService {
         }
 
         return response;
+    }
+
+    // handle ipn url
+    public ResponseEntity<Map<String, String>> handleIPNUrl(Map<String, String> params) {
+        String vnp_SecureHash = params.get("vnp_SecureHash");
+
+        if (params.containsKey("vnp_SecureHashType")) {
+            params.remove("vnp_SecureHashType");
+        }
+        if (params.containsKey("vnp_SecureHash")) {
+            params.remove("vnp_SecureHash");
+        }
+        String signValue = hashAllFields(params);
+        Map<String, String> response = new HashMap<>();
+
+        if (!signValue.equals(vnp_SecureHash)) {
+            response.put("RspCode", "97");
+            response.put("Message", "Invalid Checksum");
+            return ResponseEntity.ok(response);
+        }
+
+        // Check vnp_TxnRef if exists in DB
+        String vnp_TxnRef = params.get("vnp_TxnRef");
+
+        Optional<Payment> paymentOptional = paymentRepository.findByTransactionCode(vnp_TxnRef);
+        if (paymentOptional.isEmpty()) {
+            response.put("RspCode", "01");
+            response.put("Message", "Payment not found");
+            return ResponseEntity.ok(response);
+        }
+
+        Payment payment = paymentOptional.get();
+
+        // Check amount
+        Long amount = Long.parseLong(params.get("vnp_Amount"));
+        if (amount != payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue()) {
+            response.put("RspCode", "04");
+            response.put("Message", "Invalid amount");
+            return ResponseEntity.ok(response);
+        }
+
+        // Check status
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            response.put("RspCode", "02");
+            response.put("Message", "Payment already confirmed");
+            return ResponseEntity.ok(response);
+        }
+
+        // Update payment status
+        if ("00".equals(params.get("vnp_ResponseCode"))) {
+            payment.setStatus(PaymentStatus.COMPLETED);
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
+
+        payment.setBankCode(params.get("vnp_BankCode"));
+        payment.setCardType(params.get("vnp_CardType"));
+        payment.setPaymentDate(LocalDateTime.now());
+        payment.setPaymentDescription(params.get("vnp_OrderInfo"));
+
+        paymentRepository.save(payment);
+
+        response.put("RspCode", "00");
+        response.put("Message", "Confirm Success");
+        return ResponseEntity.ok(response);
+
     }
 
     public List<PaymentResponse> getBookingPayments(UUID userId, UUID bookingId) {
