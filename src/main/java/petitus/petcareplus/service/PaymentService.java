@@ -9,8 +9,11 @@ import petitus.petcareplus.configuration.VNPayConfig;
 import petitus.petcareplus.dto.request.payment.CreatePaymentRequest;
 import petitus.petcareplus.dto.response.payment.PaymentResponse;
 import petitus.petcareplus.dto.response.payment.PaymentUrlResponse;
+import petitus.petcareplus.dto.response.payment.VnpayReturnResponse;
 import petitus.petcareplus.utils.enums.PaymentMethod;
 import petitus.petcareplus.utils.enums.PaymentStatus;
+import petitus.petcareplus.utils.enums.VnpResponseCode;
+import petitus.petcareplus.utils.enums.VnpayReturnStatus;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Booking;
@@ -175,14 +178,6 @@ public class PaymentService {
         }
     }
 
-    // private String bytesToHex(byte[] bytes) {
-    // StringBuilder sb = new StringBuilder();
-    // for (byte b : bytes) {
-    // sb.append(String.format("%02x", b));
-    // }
-    // return sb.toString();
-    // }
-
     // private String getIpAddress(HttpServletRequest request) {
     // String ipAdress;
     // try {
@@ -228,115 +223,41 @@ public class PaymentService {
         return hmacSHA512(vnPayConfig.getHashSecret(), sb.toString());
     }
 
-    // @Transactional
-    // public PaymentResponse processVnpayReturn(Map<String, String> vnpayResponse)
-    // {
-    // String vnpSecureHash = vnpayResponse.get("vnp_SecureHash");
-    // String vnpTxnRef = vnpayResponse.get("vnp_TxnRef");
-    // String vnpResponseCode = vnpayResponse.get("vnp_ResponseCode");
-    // // String vnpTransactionNo = vnpayResponse.get("vnp_TransactionNo");
-    // String vnpBankCode = vnpayResponse.get("vnp_BankCode");
-    // String vnpCardType = vnpayResponse.get("vnp_CardType");
-    // String vnpAmount = vnpayResponse.get("vnp_Amount");
-    // // String vnpOrderInfo = vnpayResponse.get("vnp_OrderInfo");
+    public VnpayReturnResponse verifyVnpayReturn(Map<String, String> params) {
 
-    // // Remove vnp_SecureHash from params to verify
-    // Map<String, String> verifyParams = new HashMap<>(vnpayResponse);
-    // verifyParams.remove("vnp_SecureHash");
-    // verifyParams.remove("vnp_SecureHashType");
+        String vnp_SecureHash = params.get("vnp_SecureHash");
 
-    // // Sort params
-    // Map<String, String> sortedParams = new TreeMap<>(verifyParams);
-
-    // String signValue = hashAllFields(sortedParams);
-
-    // // Find payment by transaction code
-    // Payment payment = paymentRepository.findByTransactionCode(vnpTxnRef)
-    // .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-
-    // // Check if payment amount matches
-    // // VNPay amount includes 00 at the end (x100)
-    // long expectedAmount =
-    // payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
-    // long actualAmount = Long.parseLong(vnpAmount);
-
-    // if (expectedAmount != actualAmount) {
-    // throw new BadRequestException("Payment amount mismatch");
-    // }
-
-    // // Update payment status based on response code
-    // if (signValue.equals(vnpSecureHash)) {
-    // if ("00".equals(vnpResponseCode)) {
-    // payment.setStatus(PaymentStatus.COMPLETED);
-    // payment.setPaymentDate(LocalDateTime.now());
-    // } else {
-    // payment.setStatus(PaymentStatus.FAILED);
-    // }
-    // } else {
-    // log.error("Invalid secure hash: expected {}, got {}", signValue,
-    // vnpSecureHash);
-    // }
-
-    // payment.setBankCode(vnpBankCode);
-    // payment.setCardType(vnpCardType);
-    // payment.setUpdatedAt(LocalDateTime.now());
-
-    // log.info("Payment status updated: {} - {}", payment.getId(),
-    // payment.getStatus());
-
-    // paymentRepository.save(payment);
-
-    // // Return response
-    // return mapToPaymentResponse(payment);
-    // }
-
-    @Transactional
-    public PaymentResponse processVnpayReturn(Map<String, String> vnpayResponse) {
-
-        log.info("--Processing VNPAY return with response: {}", vnpayResponse);
-
-        // Extract parameters from the response
-        String vnpBankCode = vnpayResponse.get("vnp_BankCode");
-        String vnpCardType = vnpayResponse.get("vnp_CardType");
-        String vnpTxnRef = vnpayResponse.get("vnp_TxnRef");
-
-        String vnp_SecureHash = vnpayResponse.get("vnp_SecureHash");
-        if (vnpayResponse.containsKey("vnp_SecureHashType")) {
-            vnpayResponse.remove("vnp_SecureHashType");
+        if (params.containsKey("vnp_SecureHashType")) {
+            params.remove("vnp_SecureHashType");
         }
-        if (vnpayResponse.containsKey("vnp_SecureHash")) {
-            vnpayResponse.remove("vnp_SecureHash");
+        if (params.containsKey("vnp_SecureHash")) {
+            params.remove("vnp_SecureHash");
         }
-        String signValue = hashAllFields(vnpayResponse);
+        String signValue = hashAllFields(params);
 
-        // Find payment by transaction code
-        Payment payment = paymentRepository.findByTransactionCode(vnpTxnRef)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+        VnpayReturnResponse response = new VnpayReturnResponse();
 
-        // Update payment status based on response code
         if (signValue.equals(vnp_SecureHash)) {
-            if ("00".equals(vnpayResponse.get("vnp_ResponseCode"))) {
-                payment.setStatus(PaymentStatus.COMPLETED);
-                payment.setPaymentDate(LocalDateTime.now());
+            response.setAmount(params.get("vnp_Amount"));
+            response.setBankCode(params.get("vnp_BankCode"));
+            response.setCardType(params.get("vnp_CardType"));
+            response.setOrderInfo(params.get("vnp_OrderInfo"));
+            response.setPayDate(params.get("vnp_PayDate"));
+            response.setResponseCode(params.get("vnp_ResponseCode"));
+
+            if ("00".equals(params.get("vnp_ResponseCode"))) {
+                response.setStatus(VnpayReturnStatus.SUCCESS);
             } else {
-                payment.setStatus(PaymentStatus.FAILED);
+                response.setStatus(VnpayReturnStatus.FAIL);
             }
+
+            response.setMessage(VnpResponseCode.getDescription(params.get("vnp_ResponseCode")));
         } else {
-            log.error("Invalid secure hash: expected {}, got {}", signValue, vnp_SecureHash);
-            // return new BadRequestException("Invalid secure hash");
-            throw new BadRequestException(messageSourceService.get("invalid_secure_hash"));
+            response.setStatus(VnpayReturnStatus.INVALID_SIGNATURE);
+            response.setMessage("Chữ ký không hợp lệ");
         }
 
-        payment.setBankCode(vnpBankCode);
-        payment.setCardType(vnpCardType);
-        payment.setUpdatedAt(LocalDateTime.now());
-
-        log.info("Payment status updated: {} - {}", payment.getId(), payment.getStatus());
-
-        paymentRepository.save(payment);
-
-        // Return response
-        return mapToPaymentResponse(payment);
+        return response;
     }
 
     public List<PaymentResponse> getBookingPayments(UUID userId, UUID bookingId) {

@@ -1,5 +1,7 @@
 package petitus.petcareplus.controller;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.stereotype.Controller;
@@ -11,15 +13,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import petitus.petcareplus.dto.response.payment.PaymentResponse;
+import petitus.petcareplus.dto.response.payment.VnpayReturnResponse;
 import petitus.petcareplus.service.PaymentService;
 import petitus.petcareplus.utils.VnpayUtils;
-import petitus.petcareplus.utils.enums.PaymentStatus;
 
 @Controller
 @RequestMapping("/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payment", description = "APIs for managing page payments ")
+@Tag(name = "Page Payment", description = "APIs for managing page payments ")
 public class PaymentPageController {
 
         private final PaymentService paymentService;
@@ -30,17 +31,36 @@ public class PaymentPageController {
 
                 Map<String, String> params = VnpayUtils.extractRawVnpParams(request.getQueryString());
 
-                PaymentResponse response = paymentService.processVnpayReturn(params);
+                VnpayReturnResponse response = paymentService.verifyVnpayReturn(params);
 
-                model.addAttribute("status", response.getStatus().toString());
-                model.addAttribute("orderCode", response.getTransactionCode());
-                model.addAttribute("amount", response.getAmount());
-                model.addAttribute("bankCode", response.getBankCode());
-                model.addAttribute("message", response.getStatus().compareTo(PaymentStatus.COMPLETED) == 0
-                                ? "Giao dịch thành công"
-                                : "Giao dịch thất bại");
+                model.addAttribute("message", response.getMessage());
 
-                return "payment-result";
+                switch (response.getStatus()) {
+                        case SUCCESS:
+                        case FAIL:
+                                model.addAttribute("amount", response.getAmount());
+                                model.addAttribute("bankCode", response.getBankCode());
+                                model.addAttribute("cardType", response.getCardType());
+                                String decodedOrderInfo = URLDecoder.decode(response.getOrderInfo(),
+                                                StandardCharsets.UTF_8);
+                                model.addAttribute("orderInfo", decodedOrderInfo);
+                                model.addAttribute("payDate", response.getPayDate());
+                                model.addAttribute("responseCode", response.getResponseCode());
+
+                                break;
+                        case INVALID_SIGNATURE:
+                                break;
+                        default:
+                                return "error";
+                }
+
+                return switch (response.getStatus()) {
+                        case SUCCESS -> "payment-success";
+                        case FAIL -> "payment-fail";
+                        case INVALID_SIGNATURE -> "sign-invalid";
+                        default -> "error";
+                };
+
         }
 
 }

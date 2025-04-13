@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thanh toán thất bại</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        color: #2d3748;
+        line-height: 1.6;
+      }
+
+      .container {
+        width: 90%;
+        max-width: 920px;
+        margin: 20px;
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .success h1 {
+        color: #2ecc71;
+        font-size: 2rem;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+
+      .fail h1 {
+        color: #e74c3c;
+      }
+
+      .invalid h1 {
+        color: #f1c40f;
+      }
+
+      p {
+        margin-bottom: 25px;
+        color: #4a5568;
+        font-size: 1.1rem;
+      }
+
+      ul {
+        list-style: none;
+        text-align: left;
+        margin: 0 auto 30px;
+        max-width: 700px;
+      }
+
+      ul li {
+        padding: 12px 0;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      ul li:last-child {
+        border-bottom: none;
+      }
+
+      ul li strong {
+        color: #2d3748;
+        font-weight: 600;
+        flex: 1;
+        min-width: 150px;
+      }
+
+      ul li span {
+        color: #718096;
+        flex: 2;
+        word-break: break-word;
+      }
+
+      .btn {
+        display: inline-block;
+        background: linear-gradient(45deg, #4299e1, #3182ce);
+        color: white;
+        padding: 12px 32px;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+      }
+
+      .btn:hover {
+        background: linear-gradient(45deg, #3182ce, #2b6cb0);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        /* Tablet */
+        .container {
+          padding: 30px;
+          max-width: 600px;
+        }
+
+        .success h1 {
+          font-size: 1.8rem;
+        }
+
+        p {
+          font-size: 1rem;
+        }
+
+        ul {
+          max-width: 100%;
+        }
+
+        .btn {
+          padding: 10px 24px;
+          font-size: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        /* Mobile */
+        .container {
+          padding: 20px;
+          margin: 10px;
+        }
+
+        .success h1 {
+          font-size: 1.5rem;
+          margin-bottom: 15px;
+        }
+
+        p {
+          font-size: 0.9rem;
+          margin-bottom: 20px;
+        }
+
+        ul li {
+          flex-direction: column;
+          padding: 10px 0;
+        }
+
+        ul li strong {
+          min-width: 0;
+          margin-bottom: 5px;
+        }
+
+        ul li span {
+          flex: 1;
+        }
+
+        .btn {
+          width: 100%;
+          padding: 12px;
+          font-size: 0.95rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container fail">
+      <h1>😢 Thanh toán không thành công</h1>
+      <p>Giao dịch của bạn đã bị từ chối.</p>
+      <p>
+        <strong>Lý do:</strong> <span th:text="${message}">Không xác định</span>
+      </p>
+      <a class="btn">Thử lại</a>
+    </div>
+  </body>
+</html>
