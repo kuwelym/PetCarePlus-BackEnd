@@ -12,6 +12,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
+import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.exceptions.RefreshTokenExpireException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
@@ -22,6 +23,9 @@ import petitus.petcareplus.security.jwt.JwtTokenProvider;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.Constants;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -154,5 +158,29 @@ public class AuthService {
                                 .build()
                 )
                 .build();
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("authentication_credentials_not_found"));
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof JwtUserDetails userDetails)) {
+            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("authentication_credentials_not_found"));
+        }
+
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException(messageSourceService.get("current_password_incorrect"));
+        }
+        
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }
