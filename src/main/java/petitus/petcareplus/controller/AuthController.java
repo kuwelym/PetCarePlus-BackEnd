@@ -1,8 +1,6 @@
 package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,6 +14,7 @@ import petitus.petcareplus.dto.request.auth.LoginRequest;
 import petitus.petcareplus.dto.request.auth.RefreshTokenRequest;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
+import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.model.User;
@@ -140,8 +139,16 @@ public class AuthController {
         @Operation(tags = {
                         "Authentication" }, summary = "Get current user", description = "API để lấy thông tin user hiện tại", security = @SecurityRequirement(name = "bearerAuth"))
         @GetMapping("/me")
-        public ResponseEntity<User> getCurrentUser(
-                        @Parameter(name = "Authorization", description = "JWT token", required = true, in = ParameterIn.HEADER) @RequestHeader("Authorization") String token) {
+        public ResponseEntity<User> getCurrentUser() {
                 return ResponseEntity.ok(userService.getUser());
+        }
+
+        @PostMapping("/change-password")
+        @Operation(tags = { "Authentication" }, summary = "Change Password", description = "API to change user password")
+        public ResponseEntity<SuccessResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+                authService.changePassword(request);
+                return ResponseEntity.ok(SuccessResponse.builder()
+                        .message(messageSourceService.get("password_changed"))
+                        .build());
         }
 }

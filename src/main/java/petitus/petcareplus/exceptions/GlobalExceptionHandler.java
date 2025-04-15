@@ -1,5 +1,6 @@
 package petitus.petcareplus.exceptions;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.validation.ConstraintViolationException;
@@ -125,12 +126,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({
             InternalAuthenticationServiceException.class,
-            AuthenticationCredentialsNotFoundException.class,
             BadCredentialsException.class
     })
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public final ResponseEntity<ErrorResponse> handleAuthenticationCredentialsNotFoundException(
-            final AuthenticationCredentialsNotFoundException e) {
+            final Exception e) {
         return build(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
@@ -140,7 +140,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.FORBIDDEN, messageSourceService.get("access_denied"));
     }
 
-    @ExceptionHandler(InsufficientAuthenticationException.class)
+    @ExceptionHandler({
+            InsufficientAuthenticationException.class,
+            AuthenticationCredentialsNotFoundException.class,
+            ExpiredJwtException.class
+    })
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public final ResponseEntity<ErrorResponse> handleInsufficientAuthenticationException(final Exception e) {
         return build(HttpStatus.UNAUTHORIZED, messageSourceService.get("insufficient_authentication"));
