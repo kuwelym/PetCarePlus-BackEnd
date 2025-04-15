@@ -13,6 +13,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
+import petitus.petcareplus.dto.request.auth.ForgotPasswordRequest;
+import petitus.petcareplus.dto.request.auth.ResetPasswordRequest;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.exceptions.RefreshTokenExpireException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
@@ -26,6 +28,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+import petitus.petcareplus.event.PasswordResetSendEvent;
+import petitus.petcareplus.model.PasswordResetToken;
 
 import java.util.UUID;
 
@@ -49,6 +54,9 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     private final JwtTokenService jwtTokenService;
+
+    private final PasswordResetTokenService passwordResetTokenService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private User createUser(RegisterRequest request) throws BindException {
         BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
@@ -182,5 +190,24 @@ public class AuthService {
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+
+        PasswordResetToken token = passwordResetTokenService.create(user);
+        eventPublisher.publishEvent(new PasswordResetSendEvent(this, token));
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+
+        User user = passwordResetTokenService.getUserByToken(request.getToken());
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Delete the used token
+        passwordResetTokenService.deleteByUserId(user.getId());
     }
 }

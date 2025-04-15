@@ -15,6 +15,7 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.EmailVerificationToken;
+import petitus.petcareplus.model.PasswordResetToken;
 import petitus.petcareplus.model.User;
 
 @Service
@@ -59,6 +60,28 @@ public class MailSenderService {
                     templateEngine.process("mail/user-email-verification", ctx));
         } catch (Exception e) {
             log.error("Failed to send email: {}", e.getMessage(), e);
+        }
+    }
+    
+    @Async
+    public void sendPasswordResetEmail(PasswordResetToken token) {
+        User user = token.getUser();
+        if (user == null) {
+            throw new ResourceNotFoundException(messageSourceService.get("user_token_null"));
+        }
+        
+        Context ctx = createContext();
+        ctx.setVariable("name", user.getName());
+        ctx.setVariable("fullName", user.getFullName());
+        ctx.setVariable("token", token.getToken());
+
+        String subject = messageSourceService.get("password_reset_email_sent");
+
+        try {
+            send(user.getEmail(), subject,
+                    templateEngine.process("mail/password-reset", ctx));
+        } catch (Exception e) {
+            log.error("Failed to send password reset email: {}", e.getMessage(), e);
         }
     }
 

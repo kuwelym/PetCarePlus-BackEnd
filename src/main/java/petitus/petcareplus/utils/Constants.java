@@ -12,6 +12,9 @@ public final class Constants {
     public static final String TOKEN_TYPE = "Bearer";
 
     public static final int EMAIL_VERIFICATION_TOKEN_LENGTH = 6;
+    
+    public static final int PASSWORD_RESET_TOKEN_LENGTH = 6;
+    
     private Constants() {
     }
 
