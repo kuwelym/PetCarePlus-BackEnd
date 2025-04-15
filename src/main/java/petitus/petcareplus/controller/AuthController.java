@@ -15,6 +15,8 @@ import petitus.petcareplus.dto.request.auth.RefreshTokenRequest;
 import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ResendEmailVerificationRequest;
 import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
+import petitus.petcareplus.dto.request.auth.ForgotPasswordRequest;
+import petitus.petcareplus.dto.request.auth.ResetPasswordRequest;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.model.User;
@@ -149,6 +151,24 @@ public class AuthController {
                 authService.changePassword(request);
                 return ResponseEntity.ok(SuccessResponse.builder()
                         .message(messageSourceService.get("password_changed"))
+                        .build());
+        }
+
+        @PostMapping("/forgot-password")
+        @Operation(tags = { "Authentication" }, summary = "Forgot Password", description = "API to request password reset")
+        public ResponseEntity<SuccessResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+                authService.forgotPassword(request);
+                return ResponseEntity.ok(SuccessResponse.builder()
+                        .message(messageSourceService.get("password_reset_email_sent"))
+                        .build());
+        }
+
+        @PostMapping("/reset-password")
+        @Operation(tags = { "Authentication" }, summary = "Reset Password", description = "API to reset password using token")
+        public ResponseEntity<SuccessResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+                authService.resetPassword(request);
+                return ResponseEntity.ok(SuccessResponse.builder()
+                        .message(messageSourceService.get("password_reset_success"))
                         .build());
         }
 }

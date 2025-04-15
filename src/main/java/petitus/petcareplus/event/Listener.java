@@ -14,4 +14,9 @@ public class Listener {
     public void onUserEmailVerificationSendEvent(UserEmailVerificationSendEvent event) {
         mailSenderService.sendUserEmailVerification(event.getEmailVerificationToken());
     }
+    
+    @EventListener
+    public void onPasswordResetSendEvent(PasswordResetSendEvent event) {
+        mailSenderService.sendPasswordResetEmail(event.getPasswordResetToken());
+    }
 }
