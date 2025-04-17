@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import petitus.petcareplus.model.wallet.WalletTransaction;
 import petitus.petcareplus.utils.enums.PaymentMethod;
 import petitus.petcareplus.utils.enums.PaymentStatus;
 
@@ -26,6 +27,10 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
+
+    @OneToOne
+    @JoinColumn(name = "wallet_transaction_id", nullable = false)
+    private WalletTransaction walletTransaction;
 
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
