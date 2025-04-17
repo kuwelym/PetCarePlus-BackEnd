@@ -2,7 +2,6 @@ package petitus.petcareplus.model.wallet;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import petitus.petcareplus.model.Booking;
 import petitus.petcareplus.model.Payment;
@@ -10,7 +9,7 @@ import petitus.petcareplus.utils.enums.TransactionStatus;
 import petitus.petcareplus.utils.enums.TransactionType;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -49,6 +48,9 @@ public class WalletTransaction {
 
     private String description;
 
-    @CreationTimestamp
-    private Date createdAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }
