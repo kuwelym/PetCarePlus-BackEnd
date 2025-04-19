@@ -1,6 +1,5 @@
 package petitus.petcareplus.configuration;
 
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -18,10 +17,5 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         return template;
-    }
-
-    @Bean
-    public ApplicationRunner clearRedisOnStartup(RedisTemplate<String, Object> redisTemplate) {
-        return args -> redisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
     }
 }
