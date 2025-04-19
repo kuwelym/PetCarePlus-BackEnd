@@ -44,6 +44,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request.requestMatchers("/auth/me").authenticated()
                         .requestMatchers("/users/**").hasAuthority("ADMIN")
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").authenticated()
+                        .requestMatchers("/ws").authenticated()
                         .requestMatchers("/auth/change-password").authenticated()
                         .requestMatchers(
                                 "/swagger-ui/**",
