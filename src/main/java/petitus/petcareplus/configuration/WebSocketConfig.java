@@ -16,13 +16,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(authChannelInterceptor); // ✅ Register it here
+        registration.interceptors(authChannelInterceptor);
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws") // match your frontend URL
-                .setAllowedOrigins("*") // or set specific origins
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins("*")
                 .withSockJS();
     }
 
