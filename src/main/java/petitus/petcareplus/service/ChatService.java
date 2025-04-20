@@ -17,7 +17,10 @@ import petitus.petcareplus.utils.enums.Notifications;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,44 +47,61 @@ public class ChatService {
     private ChatMessageResponse sendMessageInternal(ChatMessageRequest request, UUID senderId) {
         User sender = userService.findById(senderId);
 
-        // Create and save chat message
+        ChatMessage chatMessage = createAndSaveChatMessage(request, senderId);
+
+        createNotification(chatMessage, senderId);
+
+        sendFcmNotification(chatMessage, sender);
+
+        return convertToResponse(chatMessage);
+    }
+
+    private ChatMessage createAndSaveChatMessage(ChatMessageRequest request, UUID senderId) {
         ChatMessage chatMessage = ChatMessage.builder()
                 .senderId(senderId)
                 .recipientId(request.getRecipientId())
                 .content(request.getContent())
                 .build();
 
-        chatMessage = chatMessageRepository.save(chatMessage);
+        return chatMessageRepository.save(chatMessage);
+    }
 
-        // Create notification
+    private void createNotification(ChatMessage chatMessage, UUID senderId) {
         NotificationRequest notificationRequest = NotificationRequest.builder()
-                .userIdReceive(request.getRecipientId())
+                .userIdReceive(chatMessage.getRecipientId())
                 .type(Notifications.CHAT)
                 .title("New Message")
-                .message(request.getContent())
+                .message(chatMessage.getContent())
                 .relatedId(chatMessage.getId())
                 .build();
 
         notificationService.pushNotification(notificationRequest, senderId);
+    }
 
-        // Send FCM notification
-        List<String> receiverTokens = fcmTokenService.getUserTokens(request.getRecipientId());
+    private void sendFcmNotification(ChatMessage chatMessage, User sender) {
+        List<String> receiverTokens = fcmTokenService.getUserTokens(chatMessage.getRecipientId());
         if (!receiverTokens.isEmpty()) {
             String title = "New message from " + sender.getFullName();
-            String body = request.getContent();
+            String body = chatMessage.getContent();
 
-            Map<String, String> data = new HashMap<>();
-            data.put("type", "CHAT");
-            data.put("messageId", chatMessage.getId().toString());
-            data.put("senderId", senderId.toString());
-            data.put("sentAt", chatMessage.getCreatedAt().toString());
+            Map<String, String> data = createFcmNotificationData(
+                    chatMessage.getId().toString(),
+                    sender.getId().toString()
+            );
 
             for (String token : receiverTokens) {
                 firebaseMessagingService.sendNotification(token, title, body, data);
             }
         }
+    }
 
-        return convertToResponse(chatMessage);
+    private Map<String, String> createFcmNotificationData(String messageId, String senderId) {
+        Map<String, String> data = new HashMap<>();
+        data.put("type", Notifications.CHAT.name());
+        data.put("messageId", messageId);
+        data.put("senderId", senderId);
+        data.put("sentAt", LocalDateTime.now().toString());
+        return data;
     }
 
     public Page<ChatMessageResponse> getConversation(UUID otherUserId, Pageable pageable) {

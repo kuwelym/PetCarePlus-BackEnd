@@ -18,7 +18,7 @@ import java.security.Principal;
 public class WebSocketController {
 
     private final WebSocketService webSocketService;
-    private final ChatService chatService;  // Add this
+    private final ChatService chatService;
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(
