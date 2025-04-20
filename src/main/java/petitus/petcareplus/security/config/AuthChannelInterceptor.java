@@ -9,6 +9,7 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
+import org.springframework.lang.NonNull;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 
 @Component
@@ -16,19 +17,23 @@ import petitus.petcareplus.security.jwt.JwtUserDetails;
 public class AuthChannelInterceptor implements ChannelInterceptor {
 
     @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor accessor =
-                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+    @NonNull
+    public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
+        try {
+            StompHeaderAccessor accessor =
+                    MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (StompCommand.SEND.equals(accessor.getCommand())) {
-            UsernamePasswordAuthenticationToken token = (UsernamePasswordAuthenticationToken) accessor.getHeader("simpUser");
-            JwtUserDetails userDetails = (JwtUserDetails) token.getPrincipal();
-            accessor.setUser(new StompPrincipal(userDetails.getId().toString()));
+            if (StompCommand.SEND.equals(accessor.getCommand())) {
+                UsernamePasswordAuthenticationToken token = (UsernamePasswordAuthenticationToken) accessor.getHeader("simpUser");
+                JwtUserDetails userDetails = (JwtUserDetails) token.getPrincipal();
+                accessor.setUser(new StompPrincipal(userDetails.getId().toString()));
+            } else {
+                throw new IllegalArgumentException("Missing or invalid Authorization header");
+            }
 
-        } else {
-            throw new IllegalArgumentException("Missing or invalid Authorization header");
+            return message;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error processing message: " + e.getMessage());
         }
-
-        return message;
     }
 }

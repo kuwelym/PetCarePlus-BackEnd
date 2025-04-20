@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.*;
+import petitus.petcareplus.exceptions.WebSocketExceptionHandler;
 import petitus.petcareplus.security.config.AuthChannelInterceptor;
 
 @Configuration
@@ -13,6 +14,7 @@ import petitus.petcareplus.security.config.AuthChannelInterceptor;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final AuthChannelInterceptor authChannelInterceptor;
+    private final WebSocketExceptionHandler webSocketExceptionHandler;
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
@@ -24,6 +26,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins("*")
                 .withSockJS();
+        registry.setErrorHandler(webSocketExceptionHandler);
     }
 
     @Override
