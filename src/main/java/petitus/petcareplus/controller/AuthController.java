@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.auth.LoginRequest;
 import petitus.petcareplus.dto.request.auth.RefreshTokenRequest;
@@ -37,7 +36,7 @@ public class AuthController {
         @PostMapping("/login")
         @Operation(tags = { "Authentication" }, summary = "Log in", description = "API để đăng nhập và lấy token")
         public ResponseEntity<TokenResponse> login(
-                        @RequestBody @Valid final LoginRequest request) {
+                        @RequestBody final LoginRequest request) {
                 return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword()));
         }
 
@@ -45,7 +44,7 @@ public class AuthController {
         @Operation(tags = {
                         "Authentication" }, summary = "Register Account", description = "API để đăng ký tài khoản mới")
         public ResponseEntity<SuccessResponse> register(
-                        @RequestBody @Valid final RegisterRequest request) throws BindException {
+                        @RequestBody @Valid final RegisterRequest request) {
                 authService.register(request);
 
                 return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.builder()
