@@ -12,7 +12,7 @@ import java.time.Duration;
 public class RateLimitService {
     private final StringRedisTemplate redisTemplate;
 
-    private static final long RATE_LIMIT_SECONDS = 300; // 5 minutes
+    private static final long RATE_LIMIT_SECONDS = 30; // 30 seconds
 
     public boolean canResendVerification(String email) {
         ValueOperations<String, String> ops = redisTemplate.opsForValue();
