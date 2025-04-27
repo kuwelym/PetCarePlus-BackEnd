@@ -3,7 +3,6 @@ package petitus.petcareplus.exceptions;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
-import jakarta.annotation.Nonnull;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.Ordered;
@@ -34,6 +33,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import petitus.petcareplus.dto.response.DetailedErrorResponse;
 import petitus.petcareplus.dto.response.ErrorResponse;
 import petitus.petcareplus.service.MessageSourceService;
 
@@ -48,36 +48,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final MessageSourceService messageSourceService;
 
     @Override
-    @Nonnull
-    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
-            @Nonnull HttpRequestMethodNotSupportedException ex,
-            @Nonnull HttpHeaders headers,
-            @Nonnull HttpStatusCode status,
-            @Nonnull WebRequest request) {
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ErrorResponse.builder()
                 .message(messageSourceService.get("method_not_supported"))
                 .build());
     }
 
     @Override
-    @Nonnull
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(
-            @Nonnull HttpMessageNotReadableException ex,
-            @Nonnull HttpHeaders headers,
-            @Nonnull HttpStatusCode status,
-            @Nonnull WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
                 .message(messageSourceService.get("malformed_json_request"))
                 .build());
     }
 
     @Override
-    @Nonnull
-    protected ResponseEntity<Object> handleHandlerMethodValidationException(
-            @Nonnull HandlerMethodValidationException ex,
-            @Nonnull HttpHeaders headers,
-            @Nonnull HttpStatusCode status,
-            @Nonnull WebRequest request) {
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getParameterValidationResults().forEach(validationResult -> {
             validationResult.getResolvableErrors().forEach(error -> {
@@ -85,10 +73,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             });
         });
 
-        String firstErrorMessage = errors.values().stream().findFirst().orElse(messageSourceService.get("validation_error"));
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
-                .message(firstErrorMessage)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(DetailedErrorResponse.builder()
+                .message(messageSourceService.get("validation_error"))
+                .items(errors)
                 .build());
     }
 
@@ -170,17 +157,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    @Nonnull
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex,
-            @Nonnull HttpHeaders headers,
-            @Nonnull HttpStatusCode status,
-            @Nonnull WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> errors = extractErrors(ex.getBindingResult());
-
-        String firstErrorMessage = errors.values().stream().findFirst().orElse(messageSourceService.get("validation_error"));
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ErrorResponse.builder()
-                .message(firstErrorMessage)
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(DetailedErrorResponse.builder()
+                .message(messageSourceService.get("validation_error"))
+                .items(errors)
                 .build());
     }
 
@@ -198,9 +180,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             final String message,
             final Map<String, String> errors) {
         if (!errors.isEmpty()) {
-            String errorMessage = errors.values().stream().findFirst().orElse(message);
-            return ResponseEntity.status(httpStatus).body(ErrorResponse.builder()
-                    .message(errorMessage)
+            return ResponseEntity.status(httpStatus).body(DetailedErrorResponse.builder()
+                    .message(message)
+                    .items(errors)
                     .build());
         }
 

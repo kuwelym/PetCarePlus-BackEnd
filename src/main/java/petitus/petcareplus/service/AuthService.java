@@ -2,32 +2,35 @@ package petitus.petcareplus.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
 import petitus.petcareplus.dto.request.auth.ForgotPasswordRequest;
-import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ResetPasswordRequest;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
-import petitus.petcareplus.event.PasswordResetSendEvent;
-import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.RefreshTokenExpireException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.JwtToken;
-import petitus.petcareplus.model.PasswordResetToken;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.security.jwt.JwtTokenProvider;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.Constants;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+import petitus.petcareplus.event.PasswordResetSendEvent;
+import petitus.petcareplus.model.PasswordResetToken;
 
 import java.util.UUID;
 
@@ -55,11 +58,15 @@ public class AuthService {
     private final PasswordResetTokenService passwordResetTokenService;
     private final ApplicationEventPublisher eventPublisher;
 
-    private User createUser(RegisterRequest request) {
+    private User createUser(RegisterRequest request) throws BindException {
+        BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
         userRepository.findByEmail(request.getEmail())
-                .ifPresent(user -> {
-                    throw new BadRequestException(messageSourceService.get("unique_email"));
-                });
+                .ifPresent(user -> bindingResult.addError(new FieldError(bindingResult.getObjectName(), "email",
+                        messageSourceService.get("unique_email"))));
+
+        if (bindingResult.hasErrors()) {
+            throw new BindException(bindingResult);
+        }
 
         return User.builder()
                 .email(request.getEmail())
@@ -70,9 +77,9 @@ public class AuthService {
     }
 
     public TokenResponse login(String email, String password) {
-        String badCredentialsMessage = messageSourceService.get("invalid_credentials");
+        String badCredentialsMessage = messageSourceService.get("bad_credentials");
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException(badCredentialsMessage));
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
         if (user.getEmailVerifiedAt() == null) {
             throw new ResourceNotFoundException(messageSourceService.get("email_not_verified"));
         }
@@ -84,11 +91,11 @@ public class AuthService {
             return generateTokens(((JwtUserDetails) authentication.getPrincipal()).getId());
 
         } catch (Exception e) {
-            throw new BadCredentialsException(badCredentialsMessage);
+            throw new AuthenticationCredentialsNotFoundException(badCredentialsMessage);
         }
     }
 
-    public void register(RegisterRequest request) {
+    public void register(RegisterRequest request) throws BindException {
         User user = createUser(request);
         user.setRole(roleService.findByName(Constants.RoleEnum.USER));
 
@@ -137,7 +144,7 @@ public class AuthService {
         jwtTokenService.delete(jwtToken);
     }
 
-    public TokenResponse generateTokens(final UUID id) {
+    public TokenResponse generateTokens(final UUID id){
         String token = jwtTokenProvider.generateToken(id.toString());
         String refreshToken = jwtTokenProvider.generateRefreshToken(id.toString());
 
@@ -180,7 +187,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new BadCredentialsException(messageSourceService.get("current_password_incorrect"));
         }
-
+        
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
