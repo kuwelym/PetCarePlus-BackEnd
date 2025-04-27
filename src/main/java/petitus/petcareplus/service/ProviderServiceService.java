@@ -15,7 +15,6 @@ import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceRepository;
-import petitus.petcareplus.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 public class ProviderServiceService {
         private final ProviderServiceRepository providerServiceRepository;
         private final ServiceRepository serviceRepository;
-        private final UserRepository userRepository;
+        private final UserService userService;
 
         public List<ProviderServiceResponse> getAllProviderServices() {
                 return providerServiceRepository.findAll().stream()
@@ -65,17 +64,15 @@ public class ProviderServiceService {
         }
 
         @Transactional
-        public ProviderServiceResponse addServiceToProvider(UUID providerId, ProviderServiceRequest request) {
-                User provider = userRepository.findById(providerId)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Provider not found with id: " + providerId));
+        public ProviderServiceResponse addServiceToProvider(ProviderServiceRequest request) {
+                User provider = userService.getUser();
 
                 DefaultService service = serviceRepository.findById(request.getServiceId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Service not found with id: " + request.getServiceId()));
 
                 // Check if provider already offers this service
-                if (providerServiceRepository.findByProviderIdAndServiceId(providerId, request.getServiceId())
+                if (providerServiceRepository.findByProviderIdAndServiceId(provider.getId(), request.getServiceId())
                                 .isPresent()) {
                         throw new BadRequestException("Provider already offers this service");
                 }
@@ -96,8 +93,9 @@ public class ProviderServiceService {
         }
 
         @Transactional
-        public ProviderServiceResponse updateProviderService(UUID id, UUID currentUserId,
+        public ProviderServiceResponse updateProviderService(UUID id,
                         ProviderServicePatchRequest request) {
+                UUID currentUserId = userService.getCurrentUserId();
 
                 ProviderService providerService = providerServiceRepository
                                 .findById(id)
@@ -121,7 +119,8 @@ public class ProviderServiceService {
         }
 
         @Transactional
-        public void removeServiceFromProvider(UUID id, UUID currentUserId) {
+        public void removeServiceFromProvider(UUID id) {
+                UUID currentUserId = userService.getCurrentUserId();
 
                 ProviderService providerService = providerServiceRepository
                                 .findById(id)

@@ -18,7 +18,7 @@ public class FcmTokenService {
 
     @Transactional
     public void saveToken(String token) {
-        UUID userId = userService.getUser().getId();
+        UUID userId = userService.getCurrentUserId();
         // Delete existing token if it exists
         fcmTokenRepository.deleteByToken(token);
         

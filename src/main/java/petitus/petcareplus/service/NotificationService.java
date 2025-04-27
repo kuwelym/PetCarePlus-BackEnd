@@ -7,7 +7,6 @@ import petitus.petcareplus.dto.request.notification.NotificationRequest;
 import petitus.petcareplus.dto.response.notification.NotificationResponse;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Notification;
-import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.NotificationRepository;
 
 import java.time.LocalDateTime;
@@ -23,8 +22,8 @@ public class NotificationService {
 
     @Transactional
     public NotificationResponse pushNotification(NotificationRequest request) {
-        User user = userService.getUser();
-        return pushNotificationInternal(request, user.getId());
+        UUID userId = userService.getCurrentUserId();
+        return pushNotificationInternal(request, userId);
     }
 
     @Transactional
@@ -48,19 +47,19 @@ public class NotificationService {
     }
 
     public List<NotificationResponse> getAllNotifications() {
-        User currentUser = userService.getUser();
+        UUID currentUserId = userService.getCurrentUserId();
 
-        return notificationRepository.findByUserIdReceive(currentUser.getId()).stream()
+        return notificationRepository.findByUserIdReceive(currentUserId).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     public NotificationResponse getNotificationById(UUID notificationId) {
-        User currentUser = userService.getUser();
+        UUID currentUserId = userService.getCurrentUserId();
 
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
-        if (!notification.getUserIdReceive().equals(currentUser.getId())) {
+        if (!notification.getUserIdReceive().equals(currentUserId)) {
             throw new ResourceNotFoundException("Notification does not belong to user");
         }
         return convertToResponse(notification);
@@ -76,11 +75,11 @@ public class NotificationService {
 
     @Transactional
     public void deleteNotification(UUID notificationId) {
-        User currentUser = userService.getUser();
+        UUID currentUserId = userService.getCurrentUserId();
 
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
-        if (!notification.getUserIdReceive().equals(currentUser.getId())) {
+        if (!notification.getUserIdReceive().equals(currentUserId)) {
             throw new ResourceNotFoundException("Notification does not belong to user");
         }
 
