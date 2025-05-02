@@ -1,5 +1,7 @@
 package petitus.petcareplus.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,12 +21,14 @@ import petitus.petcareplus.service.ProfileService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static java.util.stream.Collectors.toList;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/profiles")
+@SecurityRequirement(name = "bearerAuth")
 public class ProfileController extends BaseController {
     private final String[] SORT_COLUMNS = new String[]{"id", "rating", "dob", "gender", "createdAt", "updatedAt", "deletedAt"};
     private final ProfileService profileService;
@@ -32,6 +36,11 @@ public class ProfileController extends BaseController {
     private final MessageSourceService messageSourceService;
 
     @PostMapping
+    @Operation(
+            tags = {"Profile"},
+            summary = "Create profile",
+            description = "API để tạo profile"
+    )
     public ResponseEntity<SuccessResponse> createProfile(@RequestBody ProfileRequest profileRequest) {
         profileService.saveProfile(profileRequest);
 
@@ -41,6 +50,11 @@ public class ProfileController extends BaseController {
     }
 
     @PostMapping("/service-provider")
+    @Operation(
+            tags = {"Profile"},
+            summary = "Create service provider profile",
+            description = "API để tạo profile cho nhà cung cấp dịch vụ"
+    )
     public ResponseEntity<SuccessResponse> createServiceProviderProfile(@RequestBody ServiceProviderProfileRequest serviceProviderProfileRequest) {
         profileService.saveServiceProviderProfile(serviceProviderProfileRequest);
 
@@ -50,6 +64,7 @@ public class ProfileController extends BaseController {
     }
 
     @GetMapping
+    @Operation(tags = {"Profile"}, summary = "Get all profiles", description = "API để lấy danh sách tất cả profile")
     public ResponseEntity<PaginationResponse<ProfileResponse>> list(
             @RequestParam(required = false) final String query,
 
@@ -110,16 +125,31 @@ public class ProfileController extends BaseController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProfileResponse> getProfile(@PathVariable String id) {
+    @Operation(
+            tags = {"Profile"},
+            summary = "Get profile by ID",
+            description = "API để lấy thông tin profile theo ID"
+    )
+    public ResponseEntity<ProfileResponse> getProfile(@PathVariable UUID id) {
         return ResponseEntity.ok(ProfileResponse.convert(profileService.findById(id)));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ProfileResponse> getProfileByUserId(@PathVariable String userId) {
+    @Operation(
+            tags = {"Profile"},
+            summary = "Get profile by user ID",
+            description = "API để lấy thông tin profile theo user ID"
+    )
+    public ResponseEntity<ProfileResponse> getProfileByUserId(@PathVariable UUID userId) {
         return ResponseEntity.ok(ProfileResponse.convert(profileService.findByUserId(userId)));
     }
 
     @GetMapping("/me")
+    @Operation(
+            tags = {"Profile"},
+            summary = "Get my profile",
+            description = "API để lấy thông tin profile của tôi"
+    )
     public ResponseEntity<ProfileResponse> getMyProfile() {
         return ResponseEntity.ok(ProfileResponse.convert(profileService.getMyProfile()));
     }

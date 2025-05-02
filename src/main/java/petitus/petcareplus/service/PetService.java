@@ -9,7 +9,6 @@ import petitus.petcareplus.dto.response.pet.PetResponse;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Pet;
 import petitus.petcareplus.repository.PetRepository;
-import petitus.petcareplus.security.jwt.JwtTokenProvider;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,17 +20,11 @@ import java.util.stream.Collectors;
 public class PetService {
 
     private final PetRepository petRepository;
-    private final JwtTokenProvider jwtTokenProvider;
-
-    private UUID extractUserId(String bearerToken) {
-        String token = jwtTokenProvider.extractJwtFromBearerString(bearerToken);
-        return UUID.fromString(jwtTokenProvider.getUserIdFromToken(token));
-    }
-
+    private final UserService userService;
 
     @Transactional
-    public PetResponse createPet(String bearerToken, CreatePetRequest request) {
-        UUID userId = extractUserId(bearerToken);
+    public PetResponse createPet(CreatePetRequest request) {
+        UUID userId = userService.getCurrentUserId();
 
         Pet pet = Pet.builder()
                 .userId(userId)
@@ -49,8 +42,8 @@ public class PetService {
         return convertToResponse(pet);
     }
 
-    public List<PetResponse> getAllPetsByUser(String bearerToken) {
-        UUID userId = extractUserId(bearerToken);
+    public List<PetResponse> getAllPetsByUser() {
+        UUID userId = userService.getCurrentUserId();
 
         return petRepository.findByUserId(userId).stream()
                 .map(this::convertToResponse)
@@ -64,8 +57,8 @@ public class PetService {
     }
 
     @Transactional
-    public PetResponse updatePet(String bearerToken, UUID petId, UpdatePetRequest request) {
-        UUID userId = extractUserId(bearerToken);
+    public PetResponse updatePet(UUID petId, UpdatePetRequest request) {
+        UUID userId = userService.getCurrentUserId();
 
         Pet pet = petRepository.findById(petId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pet not found"));
@@ -87,8 +80,8 @@ public class PetService {
     }
 
     @Transactional
-    public void deletePet(String bearerToken, UUID petId) {
-        UUID userId = extractUserId(bearerToken);
+    public void deletePet(UUID petId) {
+        UUID userId = userService.getCurrentUserId();
         Pet pet = petRepository.findById(petId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pet not found"));
         if (!pet.getUserId().equals(userId)) {

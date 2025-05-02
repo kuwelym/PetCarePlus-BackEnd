@@ -35,22 +35,23 @@ public class ProfileService {
     }
 
     public Profile getMyProfile() {
-        User user = userService.getUser();
-        return profileRepository.findByUserId(user.getId());
+        UUID userId = userService.getCurrentUserId();
+        return profileRepository.findByUserId(userId);
     }
 
-    public Profile findById(String id) {
-        return profileRepository.findById(UUID.fromString(id)).orElse(null);
+    public Profile findById(UUID id) {
+        return profileRepository.findById(id).orElse(null);
     }
 
-    public Profile findByUserId(String userId) {
-        return profileRepository.findByUserId(UUID.fromString(userId));
+    public Profile findByUserId(UUID userId) {
+        return profileRepository.findByUserId(userId);
     }
 
     @Transactional
     public void saveProfile(ProfileRequest profileRequest) {
         User user = userService.getUser();
-        validateProfileExists(user.getId().toString());
+
+        validateProfileExists(user.getId());
 
         profileRepository.save(Profile.builder()
                 .gender(profileRequest.getGender())
@@ -59,8 +60,8 @@ public class ProfileService {
                 .build());
     }
 
-    private void validateProfileExists(String userId) {
-        if (profileRepository.findByUserId(UUID.fromString(userId)) != null) {
+    private void validateProfileExists(UUID userId) {
+        if (profileRepository.findByUserId(userId) != null) {
             throw new DataExistedException(messageSourceService.get("profile_exists"));
         }
     }
@@ -68,9 +69,9 @@ public class ProfileService {
     @Transactional
     public void saveServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
         User user = userService.getUser();
-        validateProfileExists(user.getId().toString());
+        validateProfileExists(user.getId());
 
-        Profile existingProfile = findByUserId(user.getId().toString());
+        Profile existingProfile = findByUserId(user.getId());
 
         if (existingProfile == null) {
             // If the user doesn't have a profile, create one first

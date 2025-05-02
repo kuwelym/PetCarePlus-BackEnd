@@ -34,8 +34,8 @@ public class ChatService {
 
     @Transactional
     public ChatMessageResponse sendMessage(ChatMessageRequest request) {
-        User sender = userService.getUser();
-        return sendMessageInternal(request, sender.getId());
+        UUID senderId = userService.getCurrentUserId();
+        return sendMessageInternal(request, senderId);
     }
 
     @Transactional
@@ -105,8 +105,8 @@ public class ChatService {
     }
 
     public Page<ChatMessageResponse> getConversation(UUID otherUserId, Pageable pageable) {
-        User currentUser = userService.getUser();
-        return chatMessageRepository.findConversationBetweenUsers(currentUser.getId(), otherUserId, pageable)
+        UUID currentUserId = userService.getCurrentUserId();
+        return chatMessageRepository.findConversationBetweenUsers(currentUserId, otherUserId, pageable)
                 .map(this::convertToResponse);
     }
 
@@ -123,8 +123,8 @@ public class ChatService {
     }
 
     public long getUnreadMessageCount() {
-        User currentUser = userService.getUser();
-        return chatMessageRepository.countUnreadMessages(currentUser.getId());
+        UUID currentUserId = userService.getCurrentUserId();
+        return chatMessageRepository.countUnreadMessages(currentUserId);
     }
 
     private ChatMessageResponse convertToResponse(ChatMessage message) {

@@ -172,6 +172,19 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public UUID getCurrentUserId(){
+        Authentication authentication = getAuthentication();
+        if (authentication.isAuthenticated()) {
+            try {
+                return ((JwtUserDetails) authentication.getPrincipal()).getId();
+            } catch (ClassCastException | ResourceNotFoundException e) {
+                throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
+            }
+        } else {
+            throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
+        }
+    }
+
     @Transactional
     public void verifyEmail(String token) {
         String tokenId = cipherService.decryptForURL(token);

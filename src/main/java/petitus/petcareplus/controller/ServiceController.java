@@ -1,6 +1,7 @@
 package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @RequestMapping("/services")
 @RequiredArgsConstructor
 @Tag(name = "Services", description = "APIs for managing services")
+@SecurityRequirement(name = "bearerAuth")
 public class ServiceController {
     private final ServiceService serviceService;
 

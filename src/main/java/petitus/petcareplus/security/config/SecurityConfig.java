@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
                         .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER")
                         .requestMatchers("/pets/**").authenticated()
+                        .requestMatchers("/profiles/**").authenticated()
                         .requestMatchers("/notifications/**").authenticated()
 
                         .anyRequest().authenticated())

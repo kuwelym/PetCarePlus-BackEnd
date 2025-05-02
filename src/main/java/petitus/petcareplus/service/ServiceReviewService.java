@@ -37,6 +37,7 @@ public class ServiceReviewService {
     private final BookingRepository bookingRepository;
     private final ProviderServiceRepository providerServiceRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
     private final ServiceProviderProfileRepository serviceProviderProfileRepository;
     private final MessageSourceService messageSourceService;
 
@@ -44,7 +45,8 @@ public class ServiceReviewService {
     // LoggerFactory.getLogger(BookingService.class);
 
     @Transactional
-    public ServiceReviewResponse createReview(UUID userId, ServiceReviewRequest request) {
+    public ServiceReviewResponse createReview(ServiceReviewRequest request) {
+        UUID userId = userService.getCurrentUserId();
         // Validate booking exists and belongs to user
         ProviderService providerService = providerServiceRepository.findById(request.getProviderServiceId())
                 .orElseThrow(
@@ -90,7 +92,8 @@ public class ServiceReviewService {
     }
 
     @Transactional
-    public ServiceReviewResponse updateReview(UUID userId, UUID reviewId, ServiceReviewUpdateRequest request) {
+    public ServiceReviewResponse updateReview(UUID reviewId, ServiceReviewUpdateRequest request) {
+        UUID userId = userService.getCurrentUserId();
         ServiceReview review = serviceReviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("review_not_found")));
 
@@ -123,7 +126,8 @@ public class ServiceReviewService {
     }
 
     @Transactional
-    public void deleteReview(UUID userId, UUID reviewId) {
+    public void deleteReview(UUID reviewId) {
+        UUID userId = userService.getCurrentUserId();
         ServiceReview review = serviceReviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("review_not_found")));
 
@@ -156,7 +160,8 @@ public class ServiceReviewService {
         return mapToServiceReviewResponse(review);
     }
 
-    public Page<ServiceReviewResponse> getUserReviews(UUID userId, Pageable pageable) {
+    public Page<ServiceReviewResponse> getUserReviews(Pageable pageable) {
+        UUID userId = userService.getCurrentUserId();
         return serviceReviewRepository.findAllByUserId(userId, pageable)
                 .map(this::mapToServiceReviewResponse);
     }
