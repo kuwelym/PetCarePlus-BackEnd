@@ -19,6 +19,7 @@ import petitus.petcareplus.dto.request.booking.BookingStatusUpdateRequest;
 import petitus.petcareplus.dto.response.booking.BookingResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.BookingService;
+import petitus.petcareplus.utils.enums.BookingStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -116,7 +117,7 @@ public class BookingController {
     @Operation(summary = "Get user's bookings by status", description = "Get all bookings with a specific status for the current user")
     public ResponseEntity<List<BookingResponse>> getUserBookingsByStatus(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @PathVariable String status) {
+            @PathVariable BookingStatus status) {
 
         List<BookingResponse> bookings = bookingService.getUserBookingsByStatus(userDetails.getId(), status);
         return ResponseEntity.ok(bookings);
@@ -127,7 +128,7 @@ public class BookingController {
     @Operation(summary = "Get provider's bookings by status", description = "Get all bookings with a specific status for the current provider")
     public ResponseEntity<List<BookingResponse>> getProviderBookingsByStatus(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @PathVariable String status) {
+            @PathVariable BookingStatus status) {
 
         List<BookingResponse> bookings = bookingService.getProviderBookingsByStatus(userDetails.getId(), status);
         return ResponseEntity.ok(bookings);
