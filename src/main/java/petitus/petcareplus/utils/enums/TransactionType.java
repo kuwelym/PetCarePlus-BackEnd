@@ -1,7 +1,8 @@
 package petitus.petcareplus.utils.enums;
 
 public enum TransactionType {
-    BOOKING_INCOME, // Thu nhập từ booking
+    DEPOSIT,
+    SERVICE_PROVIDER_EARNING, // Thu nhập từ dịch vụ
     WITHDRAWAL, // Rút tiền
     SYSTEM_ADJUSTMENT // Điều chỉnh từ hệ thống (hoàn tiền, điều chỉnh lỗi, etc.)
 }

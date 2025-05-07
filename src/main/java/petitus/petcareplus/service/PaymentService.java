@@ -155,9 +155,6 @@ public class PaymentService {
 
     public static String hmacSHA512(final String key, final String data) {
 
-        log.info("--key: {}", key);
-        log.info("--data: {}", data);
-
         try {
 
             if (key == null || data == null) {
@@ -321,6 +318,13 @@ public class PaymentService {
         payment.setPaymentDescription(params.get("vnp_OrderInfo"));
 
         paymentRepository.save(payment);
+
+        // Update payment status of booking if payment is successful
+        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+            Booking booking = payment.getBooking();
+            booking.setPaymentStatus(PaymentStatus.COMPLETED);
+            bookingRepository.save(booking);
+        }
 
         response.put("RspCode", "00");
         response.put("Message", "Confirm Success");

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import petitus.petcareplus.utils.enums.BookingStatus;
+import petitus.petcareplus.utils.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,8 +42,9 @@ public class Booking {
     @Column(name = "total_price", nullable = false, precision = 8, scale = 2)
     private BigDecimal totalPrice;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
-    private String paymentStatus; // pending, paid, refunded
+    private PaymentStatus paymentStatus; // pending, paid, refunded
 
     @Column(name = "booking_time", nullable = false)
     private LocalDateTime bookingTime;
@@ -86,7 +88,7 @@ public class Booking {
             status = BookingStatus.PENDING;
         }
         if (paymentStatus == null) {
-            paymentStatus = "pending";
+            paymentStatus = PaymentStatus.PENDING;
         }
     }
 }

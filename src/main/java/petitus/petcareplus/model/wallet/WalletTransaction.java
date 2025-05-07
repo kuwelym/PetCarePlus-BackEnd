@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import petitus.petcareplus.model.Booking;
-import petitus.petcareplus.model.Payment;
 import petitus.petcareplus.utils.enums.TransactionStatus;
 import petitus.petcareplus.utils.enums.TransactionType;
 
@@ -32,8 +31,9 @@ public class WalletTransaction {
     @JoinColumn(name = "booking_id")
     private Booking booking;
 
-    @OneToOne(mappedBy = "walletTransaction")
-    private Payment payment;
+    // @OneToOne
+    // @JoinColumn(name = "payment_id")
+    // private Payment payment;
 
     @Column(nullable = false)
     private BigDecimal amount;
