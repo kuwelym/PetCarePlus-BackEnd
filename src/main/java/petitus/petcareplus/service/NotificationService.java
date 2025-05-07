@@ -8,7 +8,6 @@ import petitus.petcareplus.dto.response.notification.NotificationResponse;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Notification;
 import petitus.petcareplus.repository.NotificationRepository;
-import petitus.petcareplus.security.jwt.JwtTokenProvider;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,19 +18,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
 
-    private UUID extractUserId(String bearerToken) {
-        String token = jwtTokenProvider.extractJwtFromBearerString(bearerToken);
-        return UUID.fromString(jwtTokenProvider.getUserIdFromToken(token));
+    @Transactional
+    public NotificationResponse pushNotification(NotificationRequest request) {
+        UUID userId = userService.getCurrentUserId();
+        return pushNotificationInternal(request, userId);
     }
 
     @Transactional
-    public NotificationResponse pushNotification(String bearerToken, NotificationRequest request) {
-        UUID userIdSend = extractUserId(bearerToken);
+    public NotificationResponse pushNotification(NotificationRequest request, UUID senderId) {
+        return pushNotificationInternal(request, senderId);
+    }
 
+    private NotificationResponse pushNotificationInternal(NotificationRequest request, UUID senderId) {
         Notification notification = Notification.builder()
-                .userIdSend(userIdSend)
+                .userIdSend(senderId)
                 .userIdReceive(request.getUserIdReceive())
                 .type(request.getType())
                 .imageUrl(request.getImageUrl())
@@ -44,20 +46,20 @@ public class NotificationService {
         return convertToResponse(notification);
     }
 
-    public List<NotificationResponse> getAllNotifications(String bearerToken) {
-        UUID userIdReceive = extractUserId(bearerToken);
+    public List<NotificationResponse> getAllNotifications() {
+        UUID currentUserId = userService.getCurrentUserId();
 
-        return notificationRepository.findByUserIdReceive(userIdReceive).stream()
+        return notificationRepository.findByUserIdReceive(currentUserId).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
-    public NotificationResponse getNotificationById(String bearerToken, UUID notificationId) {
-        UUID userIdReceive = extractUserId(bearerToken);
+    public NotificationResponse getNotificationById(UUID notificationId) {
+        UUID currentUserId = userService.getCurrentUserId();
 
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
-        if (!notification.getUserIdReceive().equals(userIdReceive)) {
+        if (!notification.getUserIdReceive().equals(currentUserId)) {
             throw new ResourceNotFoundException("Notification does not belong to user");
         }
         return convertToResponse(notification);
@@ -72,12 +74,12 @@ public class NotificationService {
     }
 
     @Transactional
-    public void deleteNotification(String bearerToken, UUID notificationId) {
+    public void deleteNotification(UUID notificationId) {
+        UUID currentUserId = userService.getCurrentUserId();
 
-        UUID userIdReceive = extractUserId(bearerToken);
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
-        if (!notification.getUserIdReceive().equals(userIdReceive)) {
+        if (!notification.getUserIdReceive().equals(currentUserId)) {
             throw new ResourceNotFoundException("Notification does not belong to user");
         }
 

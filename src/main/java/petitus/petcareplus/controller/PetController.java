@@ -20,28 +20,31 @@ import java.util.UUID;
 @RequestMapping("/pets")
 @RequiredArgsConstructor
 @Tag(name = "Pets", description = "Các API quản lý thú cưng")
+@SecurityRequirement(name = "bearerAuth")
 public class PetController {
 
     private final PetService petService;
 
     @PostMapping
-    @Operation(summary = "Add a pet", description = "Thêm thú cưng mới", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<PetResponse> addPet(@RequestHeader(value = "Authorization") String authorization,
-                                              @RequestBody @Valid CreatePetRequest request) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(petService.createPet(authorization, request));
+    @Operation(
+            summary = "Add a pet",
+            description = "Thêm thú cưng mới"
+    )
+    public ResponseEntity<PetResponse> addPet(@RequestBody @Valid CreatePetRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(petService.createPet(request));
     }
 
     @GetMapping
-    @Operation(summary = "Get all pets", description = "Lấy danh sách thú cưng của người dùng", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Get all pets",
+            description = "Lấy danh sách thú cưng của người dùng"
+    )
     public ResponseEntity<List<PetResponse>> getPets(@RequestHeader("Authorization") String authorization) {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(petService.getAllPetsByUser(authorization));
+        return ResponseEntity.ok(petService.getAllPetsByUser());
     }
 
     @GetMapping("/{id}")
@@ -52,14 +55,14 @@ public class PetController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update pet", description = "Cập nhật thông tin thú cưng", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<PetResponse> updatePet(@RequestHeader("Authorization") String authorization, @PathVariable UUID id, @RequestBody UpdatePetRequest request) {
-        return ResponseEntity.ok(petService.updatePet(authorization, id, request));
+    public ResponseEntity<PetResponse> updatePet(@PathVariable UUID id, @RequestBody UpdatePetRequest request) {
+        return ResponseEntity.ok(petService.updatePet(id, request));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete pet", description = "Xóa thú cưng",security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<Void> deletePet(@RequestHeader("Authorization") String authorization, @PathVariable UUID id) {
-        petService.deletePet(authorization, id);
+    public ResponseEntity<Void> deletePet(@PathVariable UUID id) {
+        petService.deletePet(id);
         return ResponseEntity.noContent().build();
     }
 }

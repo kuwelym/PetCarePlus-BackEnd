@@ -1,19 +1,17 @@
 package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
 import petitus.petcareplus.dto.response.service.ProviderServiceResponse;
-import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ProviderServiceService;
 
 import java.util.List;
@@ -23,6 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/provider-services")
 @Tag(name = "Provider Services", description = "APIs for managing provider services")
+@SecurityRequirement(name = "bearerAuth")
 public class ProviderServiceController {
     private final ProviderServiceService providerServiceService;
 
@@ -58,11 +57,10 @@ public class ProviderServiceController {
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Add a service to provider's offerings")
     public ResponseEntity<ProviderServiceResponse> addServiceToProvider(
-            @AuthenticationPrincipal JwtUserDetails currentUser,
-            @Valid @RequestBody ProviderServiceRequest request) {
-        UUID providerId = currentUser.getId();
+            @Valid @RequestBody ProviderServiceRequest request
+    ) {
         return new ResponseEntity<>(
-                providerServiceService.addServiceToProvider(providerId, request),
+                providerServiceService.addServiceToProvider(request),
                 HttpStatus.CREATED);
     }
 
@@ -70,22 +68,20 @@ public class ProviderServiceController {
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Update a provider's service offering")
     public ResponseEntity<ProviderServiceResponse> updateProviderService(
-            @AuthenticationPrincipal JwtUserDetails currentUser,
             @PathVariable UUID id,
-            @Valid @RequestBody ProviderServicePatchRequest request) {
-        UUID providerId = currentUser.getId();
+            @Valid @RequestBody ProviderServicePatchRequest request
+    ) {
         return ResponseEntity.ok(
-                providerServiceService.updateProviderService(id, providerId, request));
+                providerServiceService.updateProviderService(id, request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Remove a service from provider's offerings")
     public ResponseEntity<Void> removeServiceFromProvider(
-            @AuthenticationPrincipal JwtUserDetails currentUser,
-            @PathVariable UUID id) {
-        UUID providerId = currentUser.getId();
-        providerServiceService.removeServiceFromProvider(id, providerId);
+            @PathVariable UUID id
+    ) {
+        providerServiceService.removeServiceFromProvider(id);
         return ResponseEntity.noContent().build();
     }
 

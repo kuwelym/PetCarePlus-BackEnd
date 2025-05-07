@@ -79,9 +79,9 @@ public class AuthService {
     public TokenResponse login(String email, String password) {
         String badCredentialsMessage = messageSourceService.get("bad_credentials");
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+                .orElseThrow(() -> new BadCredentialsException(messageSourceService.get("user_not_found")));
         if (user.getEmailVerifiedAt() == null) {
-            throw new ResourceNotFoundException(messageSourceService.get("email_not_verified"));
+            throw new BadCredentialsException(messageSourceService.get("email_not_verified"));
         }
 
         UsernamePasswordAuthenticationToken authenticationToken =
@@ -91,7 +91,7 @@ public class AuthService {
             return generateTokens(((JwtUserDetails) authentication.getPrincipal()).getId());
 
         } catch (Exception e) {
-            throw new AuthenticationCredentialsNotFoundException(badCredentialsMessage);
+            throw new BadCredentialsException(badCredentialsMessage);
         }
     }
 

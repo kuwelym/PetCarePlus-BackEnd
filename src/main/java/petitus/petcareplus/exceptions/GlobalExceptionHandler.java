@@ -3,6 +3,7 @@ package petitus.petcareplus.exceptions;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.Ordered;
@@ -49,8 +50,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final MessageSourceService messageSourceService;
 
     @Override
-    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex,
-            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    @Nonnull
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
+            @Nonnull HttpRequestMethodNotSupportedException ex,
+            @Nonnull HttpHeaders headers,
+            @Nonnull HttpStatusCode status,
+            @Nonnull WebRequest request) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ErrorResponse.builder()
                 .message(messageSourceService.get("method_not_supported"))
                 .build());
@@ -67,9 +72,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
-            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-
+    @Nonnull
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            @Nonnull HttpMessageNotReadableException ex,
+            @Nonnull HttpHeaders headers,
+            @Nonnull HttpStatusCode status,
+            @Nonnull WebRequest request) {
         String errorMessage = "Malformed JSON request";
         Throwable cause = ex.getMostSpecificCause();
 
@@ -92,16 +100,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         } else if (cause instanceof com.fasterxml.jackson.databind.exc.MismatchedInputException mismatchedInputEx) {
             errorMessage = "Invalid or missing value in request body: " + mismatchedInputEx.getOriginalMessage();
         }
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.builder()
-                        .message(errorMessage)
-                        .build());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
+                .message(errorMessage)
+                .build());
     }
 
     @Override
-    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
-            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    @Nonnull
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            @Nonnull HandlerMethodValidationException ex,
+            @Nonnull HttpHeaders headers,
+            @Nonnull HttpStatusCode status,
+            @Nonnull WebRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getParameterValidationResults().forEach(validationResult -> {
             validationResult.getResolvableErrors().forEach(error -> {
@@ -171,6 +181,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             MissingRequestHeaderException.class,
             MalformedJwtException.class,
             SignatureException.class,
+            BadCredentialsException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public final ResponseEntity<ErrorResponse> handleBadRequestException(final Exception e) {
@@ -188,8 +199,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({
-            InternalAuthenticationServiceException.class,
-            BadCredentialsException.class
+            InternalAuthenticationServiceException.class
     })
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public final ResponseEntity<ErrorResponse> handleAuthenticationCredentialsNotFoundException(
@@ -219,9 +229,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    @Nonnull
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            @Nonnull HttpHeaders headers,
+            @Nonnull HttpStatusCode status,
+            @Nonnull WebRequest request) {
         Map<String, String> errors = extractErrors(ex.getBindingResult());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(DetailedErrorResponse.builder()
                 .message(messageSourceService.get("validation_error"))
