@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
 import petitus.petcareplus.dto.request.notification.NotificationRequest;
 import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
-import petitus.petcareplus.exceptions.ResourceNotFoundException;
+import petitus.petcareplus.dto.response.chat.ConversationResponse;
 import petitus.petcareplus.model.ChatMessage;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.ChatMessageRepository;
@@ -17,10 +17,8 @@ import petitus.petcareplus.utils.enums.Notifications;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +37,9 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageResponse sendMessage(ChatMessageRequest request, Principal principal) {
+    public void sendMessage(ChatMessageRequest request, Principal principal) {
         UUID senderId = UUID.fromString(principal.getName());
-        return sendMessageInternal(request, senderId);
+        sendMessageInternal(request, senderId);
     }
 
     private ChatMessageResponse sendMessageInternal(ChatMessageRequest request, UUID senderId) {
@@ -111,20 +109,101 @@ public class ChatService {
     }
 
     @Transactional
-    public void markMessageAsRead(UUID messageId) {
-        ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Message not found"));
+    public void markMessageAsRead(UUID otherUserId) {
+        UUID currentUserId = userService.getCurrentUserId();
 
-        if (!message.getIsRead()) {
-            message.setIsRead(true);
-            message.setReadAt(LocalDateTime.now());
-            chatMessageRepository.save(message);
-        }
+        chatMessageRepository.updateChatMessagesAsRead(
+                otherUserId,
+                currentUserId
+        );
     }
 
     public long getUnreadMessageCount() {
         UUID currentUserId = userService.getCurrentUserId();
         return chatMessageRepository.countUnreadMessages(currentUserId);
+    }
+
+    public List<ConversationResponse> getAllConversations(int limit) {
+        UUID currentUserId = userService.getCurrentUserId();
+        List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithTimes(
+                currentUserId,
+                limit
+        );
+
+        List<UUID> userIds = extractUserIds(conversationResults);
+        return buildConversationResponses(currentUserId, userIds);
+    }
+
+    public List<ConversationResponse> getAllConversationsWithKeyset(
+            LocalDateTime lastMessageTime,
+            int limit
+    ) {
+        UUID currentUserId = userService.getCurrentUserId();
+        List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithKeyset(
+                currentUserId,
+                lastMessageTime,
+                limit
+        );
+
+        List<UUID> userIds = extractUserIds(conversationResults);
+        return buildConversationResponses(currentUserId, userIds);
+    }
+
+    private List<UUID> extractUserIds(List<Object[]> results) {
+        return results.stream()
+                .map(result -> UUID.fromString(result[0].toString()))
+                .collect(Collectors.toList());
+    }
+
+    private List<ConversationResponse> buildConversationResponses(UUID currentUserId, List<UUID> userIds) {
+        if (userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<UUID, User> usersMap = userService.findAllByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        return userIds.stream()
+                .map(userId -> {
+                    User user = usersMap.get(userId);
+                    if (user == null) {
+                        log.warn("User with ID {} not found", userId);
+                        return null;
+                    }
+
+                    ChatMessage lastMessage = chatMessageRepository.findLatestMessageBetweenUsers(
+                            currentUserId,
+                            userId
+                    );
+
+                    if (lastMessage == null) {
+                        log.warn("No messages found between users {} and {}", currentUserId, userId);
+                        return null;
+                    }
+
+                    long unreadCount = 0;
+                    if (lastMessage.getRecipientId().equals(currentUserId) && !lastMessage.getIsRead()) {
+                        unreadCount = chatMessageRepository.countUnreadMessages(currentUserId);
+                    }
+
+                    // Get avatarUrl safely handling null profile
+                    String avatarUrl = null;
+                    if (user.getProfile() != null) {
+                        avatarUrl = user.getProfile().getAvatarUrl();
+                    }
+
+                    return ConversationResponse.builder()
+                            .userId(userId)
+                            .userName(user.getFullName())
+                            .userAvatarUrl(avatarUrl)
+                            .lastMessage(lastMessage.getContent())
+                            .lastMessageTime(lastMessage.getCreatedAt())
+                            .hasUnreadMessages(unreadCount > 0)
+                            .unreadCount(unreadCount)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private ChatMessageResponse convertToResponse(ChatMessage message) {

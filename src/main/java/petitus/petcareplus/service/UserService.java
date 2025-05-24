@@ -31,6 +31,7 @@ import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -66,6 +67,10 @@ public class UserService implements UserDetailsService {
     public Page<User> findAll(UserCriteria criteria, PaginationCriteria paginationCriteria) {
         return userRepository.findAll(new UserFilterSpecification(criteria),
                 PageRequestBuilder.build(paginationCriteria));
+    }
+
+    public List<User> findAllByIds(List<UUID> ids) {
+        return userRepository.findAllById(ids);
     }
 
     public User findById(UUID id) {
