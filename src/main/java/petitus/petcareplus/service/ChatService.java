@@ -10,7 +10,6 @@ import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
 import petitus.petcareplus.dto.request.notification.NotificationRequest;
 import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
 import petitus.petcareplus.dto.response.chat.ConversationResponse;
-import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.ChatMessage;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.ChatMessageRepository;
@@ -110,15 +109,13 @@ public class ChatService {
     }
 
     @Transactional
-    public void markMessageAsRead(UUID messageId) {
-        ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Message not found"));
+    public void markMessageAsRead(UUID otherUserId) {
+        UUID currentUserId = userService.getCurrentUserId();
 
-        if (!message.getIsRead()) {
-            message.setIsRead(true);
-            message.setReadAt(LocalDateTime.now());
-            chatMessageRepository.save(message);
-        }
+        chatMessageRepository.updateChatMessagesAsRead(
+                otherUserId,
+                currentUserId
+        );
     }
 
     public long getUnreadMessageCount() {

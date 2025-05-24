@@ -3,6 +3,7 @@ package petitus.petcareplus.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -98,5 +99,17 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
     ChatMessage findLatestMessageBetweenUsers(
         @Param("userId1") UUID userId1,
         @Param("userId2") UUID userId2
+    );
+
+    @Modifying
+    @Query(value = """
+        UPDATE ChatMessage m
+        SET m.isRead = true, m.readAt = CURRENT_TIMESTAMP
+        WHERE m.senderId = :senderId AND m.recipientId = :recipientId
+        AND m.isRead = false
+        """)
+    void updateChatMessagesAsRead(
+        @Param("senderId") UUID senderId,
+        @Param("recipientId") UUID recipientId
     );
 } 

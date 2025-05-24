@@ -64,12 +64,12 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getAllConversationsWithKeyset(lastMessageTime, limit));
     }
 
-    @PutMapping("/messages/{messageId}/read")
+    @PutMapping("/messages/{otherUserId}/read")
     @Operation(summary = "Mark message as read", description = "Mark a specific message as read", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Void> markMessageAsRead(
-            @Parameter(description = "Message ID to mark as read") @PathVariable UUID messageId) {
+            @Parameter(description = "Other user ID to mark the chat section as read") @PathVariable UUID otherUserId) {
 
-        chatService.markMessageAsRead(messageId);
+        chatService.markMessageAsRead(otherUserId);
         return ResponseEntity.ok().build();
     }
 
