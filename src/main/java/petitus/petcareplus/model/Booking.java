@@ -3,8 +3,9 @@ package petitus.petcareplus.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import petitus.petcareplus.utils.enums.BookingStatus;
 import petitus.petcareplus.utils.enums.PaymentStatus;
 
@@ -12,20 +13,17 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
-@Data
+import org.hibernate.annotations.CreationTimestamp;
+
+@Getter
+@Setter
 @Entity
 @Table(name = "bookings")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Booking {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+public class Booking extends AbstractBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -37,15 +35,18 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private BookingStatus status; // pending, accepted, ongoing, completed, cancelled
+    @Builder.Default
+    private BookingStatus status = BookingStatus.PENDING; // pending, accepted, ongoing, completed, cancelled
 
     @Column(name = "total_price", nullable = false, precision = 8, scale = 2)
     private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
-    private PaymentStatus paymentStatus; // pending, paid, refunded
+    @Builder.Default
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING; // pending, paid, refunded
 
+    @CreationTimestamp
     @Column(name = "booking_time", nullable = false)
     private LocalDateTime bookingTime;
 
@@ -64,12 +65,6 @@ public class Booking {
     @Column(name = "note")
     private String note;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<PetBooking> petBookings = new HashSet<>();
@@ -78,17 +73,4 @@ public class Booking {
     @Builder.Default
     private Set<ServiceBooking> serviceBookings = new HashSet<>();
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        bookingTime = LocalDateTime.now();
-
-        // Set default values
-        if (status == null) {
-            status = BookingStatus.PENDING;
-        }
-        if (paymentStatus == null) {
-            paymentStatus = PaymentStatus.PENDING;
-        }
-    }
 }

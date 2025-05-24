@@ -35,3 +35,13 @@ build/
 # Ignore environment variables file
 .env
 
+
+# Firebase service account credentials
+firebase-service-account.json
+src/main/resources/firebase-service-account.json
+
+# Other sensitive files
+*.p12
+*.pem
+*.key
+service-account-*.json

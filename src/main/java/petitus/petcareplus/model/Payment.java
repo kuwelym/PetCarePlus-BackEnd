@@ -3,25 +3,23 @@ package petitus.petcareplus.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import petitus.petcareplus.utils.enums.PaymentMethod;
 import petitus.petcareplus.utils.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "payments")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+public class Payment extends AbstractBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
@@ -46,12 +44,6 @@ public class Payment {
 
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     @Column(name = "card_type")
     private String cardType;

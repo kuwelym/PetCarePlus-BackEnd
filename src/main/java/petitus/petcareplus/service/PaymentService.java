@@ -60,8 +60,6 @@ public class PaymentService {
                 .paymentMethod(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
                 .paymentDescription(request.getDescription())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
         Payment savedPayment = paymentRepository.save(payment);

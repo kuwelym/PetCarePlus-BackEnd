@@ -1,7 +1,6 @@
 package petitus.petcareplus.service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -52,8 +51,6 @@ public class WalletService {
                                 .user(userService.getUser())
                                 .balance(BigDecimal.ZERO) // Initialize balance to 0
                                 .pendingBalance(BigDecimal.ZERO) // Initialize pending balance to 0
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
                                 .build();
 
                 Wallet savedWallet = walletRepository.save(wallet);
@@ -97,8 +94,6 @@ public class WalletService {
                                 .booking(booking)
                                 .status(status)
                                 .description(description)
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
                                 .build();
 
                 walletTransactionRepository.save(transaction);

@@ -2,14 +2,12 @@ package petitus.petcareplus.model.wallet;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import petitus.petcareplus.model.AbstractBaseEntity;
 import petitus.petcareplus.model.Booking;
 import petitus.petcareplus.utils.enums.TransactionStatus;
 import petitus.petcareplus.utils.enums.TransactionType;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "wallet_transactions")
@@ -18,10 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class WalletTransaction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class WalletTransaction extends AbstractBaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "wallet_id")
@@ -48,9 +43,4 @@ public class WalletTransaction {
 
     private String description;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 }
