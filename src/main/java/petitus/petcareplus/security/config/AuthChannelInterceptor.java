@@ -23,12 +23,21 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
             StompHeaderAccessor accessor =
                     MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-            if (StompCommand.SEND.equals(accessor.getCommand())) {
-                UsernamePasswordAuthenticationToken token = (UsernamePasswordAuthenticationToken) accessor.getHeader("simpUser");
-                JwtUserDetails userDetails = (JwtUserDetails) token.getPrincipal();
-                accessor.setUser(new StompPrincipal(userDetails.getId().toString()));
-            } else {
-                throw new IllegalArgumentException("Missing or invalid Authorization header");
+            if (StompCommand.SEND.equals(accessor.getCommand()) || StompCommand.CONNECT.equals(accessor.getCommand())) {
+                // Check if the user is already authenticated with a StompPrincipal
+                if (accessor.getUser() instanceof StompPrincipal) {
+                    // User is already authenticated, no need to process again
+                    return message;
+                }
+                
+                // Get the authentication token
+                Object simpUser = accessor.getHeader("simpUser");
+                if (simpUser instanceof UsernamePasswordAuthenticationToken token) {
+                    JwtUserDetails userDetails = (JwtUserDetails) token.getPrincipal();
+                    accessor.setUser(new StompPrincipal(userDetails.getId().toString()));
+                } else {
+                    throw new IllegalArgumentException("Missing or invalid Authentication");
+                }
             }
 
             return message;
