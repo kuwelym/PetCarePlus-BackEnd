@@ -3,6 +3,7 @@ package petitus.petcareplus.dto.response.profile;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.model.profile.Profile;
 import petitus.petcareplus.model.profile.ServiceProviderProfile;
 
@@ -30,7 +31,7 @@ public class ServiceProviderProfileResponse extends ProfileResponse{
         Profile profile = serviceProviderProfile.getProfile();
         ServiceProviderProfileResponse.ServiceProviderProfileResponseBuilder<?, ?> builder = ServiceProviderProfileResponse.builder()
                 .id(profile.getId().toString())
-                .userId(profile.getUser().getId().toString())
+                .user(UserResponse.convert(profile.getUser()))
                 .dob(profile.getDob())
                 .gender(profile.getGender())
                 .isServiceProvider(profile.isServiceProvider())

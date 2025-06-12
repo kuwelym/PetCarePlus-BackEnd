@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/admin/users")
 @Tag(name = "User Management", description = "APIs for managing user profiles, preferences and settings")
-public class UserController extends BaseController {
+public class AdminUserController extends BaseController {
         private final String[] SORT_COLUMNS = new String[] { "id", "email", "name", "lastName", "blockedAt",
                         "createdAt", "updatedAt", "deletedAt" };
 
@@ -42,7 +42,7 @@ public class UserController extends BaseController {
 
         @GetMapping
         @Operation(tags = {
-                        "User Profile" }, summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
+                        "User Management" }, summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<PaginationResponse<UserResponse>> list(
                         @RequestParam(required = false) final List<String> roles,
 
@@ -89,7 +89,7 @@ public class UserController extends BaseController {
 
         @GetMapping("/{id}")
         @Operation(tags = {
-                        "User Profile" }, summary = "Get an user", description = "API để lấy thông tin một người dùng", security = {
+                        "User Management" }, summary = "Get an user", description = "API để lấy thông tin một người dùng", security = {
                                         @SecurityRequirement(name = "bearerAuth") })
         public ResponseEntity<UserResponse> get(@PathVariable final String id) throws BadRequestException {
                 return ResponseEntity.ok(UserResponse.convert(userService.findById(id)));
@@ -97,7 +97,7 @@ public class UserController extends BaseController {
 
         @PutMapping("/{id}")
         @Operation(tags = {
-                        "User Profile" }, summary = "Update information user", description = "Cập nhật thông tin người dùng", security = @SecurityRequirement(name = "bearerAuth"))
+                        "User Management" }, summary = "Update information user", description = "Cập nhật thông tin người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<UserResponse> update(@PathVariable final String id,
                         @RequestBody @Valid final UpdateUserRequest user) throws BindException {
                 return ResponseEntity.ok(UserResponse.convert(userService.update(id, user)));
