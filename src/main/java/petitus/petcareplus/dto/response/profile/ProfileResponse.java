@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import petitus.petcareplus.dto.response.ResponseObject;
+import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.model.profile.Profile;
 
 import java.time.LocalDate;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 public class ProfileResponse extends ResponseObject {
     private String id;
 
-    private String userId;
+    private UserResponse user;
 
     private LocalDate dob;
 
@@ -34,7 +35,7 @@ public class ProfileResponse extends ResponseObject {
             return ServiceProviderProfileResponse.convert(profile.getServiceProviderProfile());
         ProfileResponse.ProfileResponseBuilder<?, ?> builder = ProfileResponse.builder()
                 .id(profile.getId().toString())
-                .userId(profile.getUser().getId().toString())
+                .user(UserResponse.convert(profile.getUser()))
                 .dob(profile.getDob())
                 .gender(profile.getGender())
                 .isServiceProvider(profile.isServiceProvider())
