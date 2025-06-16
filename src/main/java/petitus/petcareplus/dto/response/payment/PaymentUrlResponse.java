@@ -11,4 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PaymentUrlResponse {
     private String paymentUrl;
+    private String qrCode;
+    private String orderCode;
+    private String message;
+    private String status;
+    private String currency;
+    private int amount;
 }

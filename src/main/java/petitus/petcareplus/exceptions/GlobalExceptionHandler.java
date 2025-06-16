@@ -213,6 +213,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.FORBIDDEN, messageSourceService.get("access_denied"));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler({
             InsufficientAuthenticationException.class,
             AuthenticationCredentialsNotFoundException.class,

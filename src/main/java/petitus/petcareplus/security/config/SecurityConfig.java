@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/payments/vnpay-return").permitAll()
                         .requestMatchers("/payments/vnpay-ipn").permitAll()
+                        .requestMatchers("/payments/payos-return").permitAll()
+                        .requestMatchers("/payments/payos-cancel").permitAll()
+                        .requestMatchers("/payments/payos/webhook").permitAll()
 
                         // Các route yêu cầu quyền USER
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")

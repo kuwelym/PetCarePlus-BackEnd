@@ -81,7 +81,7 @@ public class PaymentService {
         // String bankCode = req.getParameter("bankCode");
 
         String vnp_TxnRef = generateTransactionCode();
-        payment.setTransactionCode(vnp_TxnRef);
+        payment.setOrderCode(vnp_TxnRef);
         paymentRepository.save(payment);
 
         String vnp_IpAddr = "127.0.0.1";
@@ -310,8 +310,7 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
         }
 
-        payment.setBankCode(params.get("vnp_BankCode"));
-        payment.setCardType(params.get("vnp_CardType"));
+        payment.setVnpayData(vnp_TxnRef, params.get("vnp_BankCode"), params.get("vnp_CardType"));
         payment.setPaymentDate(LocalDateTime.now());
         payment.setPaymentDescription(params.get("vnp_OrderInfo"));
 
@@ -355,10 +354,12 @@ public class PaymentService {
                 .amount(payment.getAmount())
                 .paymentMethod(payment.getPaymentMethod())
                 .status(payment.getStatus())
-                .transactionCode(payment.getTransactionCode())
-                .bankCode(payment.getBankCode())
+                .gatewayData(payment.getGatewayData())
+                .orderCode(payment.getOrderCode())
                 .paymentDate(payment.getPaymentDate())
                 .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
                 .build();
     }
+
 }

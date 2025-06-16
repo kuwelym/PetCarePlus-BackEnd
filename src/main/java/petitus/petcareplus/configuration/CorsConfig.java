@@ -19,10 +19,11 @@ public class CorsConfig {
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
         CorsConfiguration config = new CorsConfiguration();
 
         for (String origin : allowedOrigins) {
-            config.addAllowedOrigin(origin);
+            config.addAllowedOriginPattern(origin);
         }
 
         for (String method : allowedMethods) {
@@ -33,7 +34,7 @@ public class CorsConfig {
         config.setAllowCredentials(true);
         config.addExposedHeader("Authorization");
         source.registerCorsConfiguration("/**", config);
-        
+
         return new CorsFilter(source);
     }
-} 
+}
