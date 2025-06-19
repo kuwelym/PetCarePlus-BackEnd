@@ -30,7 +30,9 @@ import vn.payos.type.WebhookData;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -80,8 +82,6 @@ public class PayOSPaymentService {
             long orderCode = generateOrderCode();
             String orderCodeString = String.valueOf(orderCode);
 
-            log.info("Description 1: {}", request.getDescription());
-
             // 5. Create payment record
             Payment payment = Payment.builder()
                     .booking(booking)
@@ -93,8 +93,6 @@ public class PayOSPaymentService {
                     .build();
 
             Payment savedPayment = paymentRepository.save(payment);
-
-            log.info("Description 2: {}", savedPayment.getPaymentDescription());
 
             // 6. Prepare PayOS payment data
             List<ItemData> items = createPayOSItems(request);
@@ -112,18 +110,17 @@ public class PayOSPaymentService {
                     .returnUrl(payOSConfig.getReturnUrl())
                     .build();
 
-            log.info("Description 3: {}", paymentData.getDescription());
-
             // 7. Create payment link using PayOS SDK
             CheckoutResponseData checkoutResponse = payOS.createPaymentLink(paymentData);
-
-            log.info("Description 4: {}", checkoutResponse.getDescription());
 
             // 8. Update payment with PayOS response
             savedPayment.setPayosData(checkoutResponse.getPaymentLinkId(),
                     checkoutResponse.getCheckoutUrl(),
                     checkoutResponse.getQrCode());
             paymentRepository.save(savedPayment);
+
+            booking.setPaymentStatus(savedPayment.getStatus());
+            bookingRepository.save(booking);
 
             log.info("PayOS payment created successfully. Order code: {}, Payment ID: {}",
                     orderCodeString, savedPayment.getId());
@@ -361,6 +358,10 @@ public class PayOSPaymentService {
 
                 paymentRepository.save(payment);
 
+                Booking booking = payment.getBooking();
+                booking.setPaymentStatus(payment.getStatus());
+                bookingRepository.save(booking);
+
             } else {
                 log.info("Payment status unchanged ({}) for order code: {}", currentDbStatus, orderCode);
             }
@@ -391,12 +392,34 @@ public class PayOSPaymentService {
         };
     }
 
-    private LocalDateTime mapStringToLocalDateTime(String dateTimeStr) {
+    public LocalDateTime mapStringToLocalDateTime(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isEmpty()) {
             return null;
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return LocalDateTime.parse(dateTimeStr, formatter);
+
+        try {
+            // Case 1: ISO with offset, ví dụ: 2025-06-19T10:14:45+07:00
+            OffsetDateTime offsetDateTime = OffsetDateTime.parse(dateTimeStr);
+            return offsetDateTime.toLocalDateTime();
+        } catch (DateTimeParseException e) {
+            // Ignore and try next
+        }
+
+        try {
+            // Case 2: No offset, space instead of 'T', ví dụ: 2025-06-19 10:14:45
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return LocalDateTime.parse(dateTimeStr, formatter);
+        } catch (DateTimeParseException e) {
+            // Ignore and try next
+        }
+
+        try {
+            // Case 3: ISO format without offset (T separator), ví dụ: 2025-06-19T10:14:45
+            return LocalDateTime.parse(dateTimeStr);
+        } catch (DateTimeParseException e) {
+            // Still fail
+            throw new IllegalArgumentException("Unsupported datetime format: " + dateTimeStr, e);
+        }
     }
 
 }
