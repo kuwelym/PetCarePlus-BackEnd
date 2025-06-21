@@ -24,6 +24,7 @@ import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.EmailVerificationToken;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.spec.UserFilterSpecification;
+import petitus.petcareplus.utils.Constants;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.UserCriteria;
 import petitus.petcareplus.repository.UserRepository;
@@ -48,6 +49,8 @@ public class UserService implements UserDetailsService {
     private final EmailVerificationTokenService emailVerificationTokenService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final RoleService roleService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -94,7 +97,7 @@ public class UserService implements UserDetailsService {
         }
 
         if (request.getRole() != null) {
-            user.setRole(request.getRole());
+            user.setRole(roleService.findByName(Constants.RoleEnum.valueOf(request.getRole().toUpperCase())));
         }
 
         if (request.getIsEmailVerified() != null) {

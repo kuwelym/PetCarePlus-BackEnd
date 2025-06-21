@@ -42,7 +42,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(request -> request.requestMatchers("/auth/me").authenticated()
-                        .requestMatchers("/users/**").hasAuthority("ADMIN")
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").authenticated()
                         .requestMatchers("/ws").authenticated()
@@ -62,7 +62,6 @@ public class SecurityConfig {
 
                         // Các route yêu cầu quyền USER
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER")
                         .requestMatchers("/pets/**").authenticated()
                         .requestMatchers("/profiles/**").authenticated()
                         .requestMatchers("/notifications/**").authenticated()

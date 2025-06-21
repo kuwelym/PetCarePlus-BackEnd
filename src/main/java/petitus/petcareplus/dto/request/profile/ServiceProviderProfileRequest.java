@@ -13,13 +13,9 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ServiceProviderProfileRequest extends ProfileRequest {
-    private String about;
-
     private String contactPhone;
 
     private String contactEmail;
-
-    private String location;
 
     private Map<String, Object> availableTime;
 

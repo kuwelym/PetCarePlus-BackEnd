@@ -43,6 +43,8 @@ public class AuthService {
 
     private final RoleService roleService;
 
+    private final ProfileService profileService;
+
     private final PasswordEncoder passwordEncoder;
 
     private final AuthenticationManager authenticationManager;
@@ -100,6 +102,8 @@ public class AuthService {
         user.setRole(roleService.findByName(Constants.RoleEnum.USER));
 
         userRepository.save(user);
+
+        profileService.createDefaultProfile(user);
 
         userService.emailVerificationEventPublisher(user);
 

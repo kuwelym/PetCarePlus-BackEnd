@@ -31,7 +31,7 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
                 String q = String.format("%%%s%%", criteria.getQuery());
                 predicates.add(
                         builder.or(
-                                builder.like(builder.lower(serviceProviderProfile.get("about")), q)
+                                builder.like(builder.lower(root.get("about")), q)
                         )
                 );
             }
@@ -70,14 +70,13 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
                         (Predicate) builder.function("jsonb_exists", Boolean.class, serviceProviderProfile.get("availableTime"), builder.literal(criteria.getAvailableTime()))
                 );
             }
-
-            if (criteria.getLocation() != null) {
-                predicates.add(
-                        builder.like(builder.lower(serviceProviderProfile.get("location")), "%" + criteria.getLocation().toLowerCase() + "%")
-                );
-            }
         }
 
+        if (criteria.getLocation() != null) {
+            predicates.add(
+                    builder.like(builder.lower(root.get("location")), "%" + criteria.getLocation().toLowerCase() + "%")
+            );
+        }
 
         if (criteria.getCreatedAtStart() != null) {
             predicates.add(

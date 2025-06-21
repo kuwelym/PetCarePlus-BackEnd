@@ -16,6 +16,7 @@ public class ConversationResponse {
     private String lastMessage;
     private String userAvatarUrl;
     private LocalDateTime lastMessageTime;
+    private UUID lastMessageSenderId;
     private Boolean hasUnreadMessages;
     private Long unreadCount;
-} 
+}
