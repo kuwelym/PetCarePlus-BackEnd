@@ -26,6 +26,10 @@ public class ProfileResponse extends ResponseObject {
 
     private String avatarUrl;
 
+    private String location;
+
+    private String about;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -45,6 +49,8 @@ public class ProfileResponse extends ResponseObject {
                 .dob(profile.getDob())
                 .gender(profile.getGender())
                 .avatarUrl(profile.getAvatarUrl())
+                .location(profile.getLocation())
+                .about(profile.getAbout())
                 .isServiceProvider(profile.isServiceProvider())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())

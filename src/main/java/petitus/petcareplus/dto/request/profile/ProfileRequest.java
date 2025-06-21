@@ -11,6 +11,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ProfileRequest {
     private String dob;
-
+    private String avatarUrl;
     private String gender;
+    private String location;
+    private String about;
 }

@@ -39,6 +39,12 @@ public class Profile extends AbstractBaseEntity {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "location")
+    private String location;
+
+    @Column(name = "about", columnDefinition = "TEXT")
+    private String about;
+
     @Version
     private Long version;
 }

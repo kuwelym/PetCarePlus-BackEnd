@@ -63,6 +63,34 @@ public class ProfileController extends BaseController {
                 .build());
     }
 
+    @PutMapping
+    @Operation(
+            tags = {"Profile"},
+            summary = "Update profile",
+            description = "API để cập nhật profile"
+    )
+    public ResponseEntity<SuccessResponse> updateProfile(@RequestBody ProfileRequest profileRequest) {
+        profileService.updateProfile(profileRequest);
+
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .message(messageSourceService.get("profile_updated"))
+                .build());
+    }
+
+    @PutMapping("/service-provider")
+    @Operation(
+            tags = {"Profile"},
+            summary = "Update service provider profile",
+            description = "API để cập nhật profile cho nhà cung cấp dịch vụ"
+    )
+    public ResponseEntity<SuccessResponse> updateServiceProviderProfile(@RequestBody ServiceProviderProfileRequest serviceProviderProfileRequest) {
+        profileService.updateServiceProviderProfile(serviceProviderProfileRequest);
+
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .message(messageSourceService.get("profile_updated"))
+                .build());
+    }
+
     @GetMapping
     @Operation(tags = {"Profile"}, summary = "Get all profiles", description = "API để lấy danh sách tất cả profile")
     public ResponseEntity<PaginationResponse<ProfileResponse>> list(
