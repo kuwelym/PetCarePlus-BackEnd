@@ -24,9 +24,6 @@ public class ServiceProviderProfile extends AbstractBaseEntity{
     @JsonBackReference
     private Profile profile;
 
-    @Column(name = "about", columnDefinition = "TEXT")
-    private String about;
-
     @ElementCollection
     @CollectionTable(name = "service_provider_skills", joinColumns = @JoinColumn(name = "profile_id"))
     @Column(name = "skill")
@@ -46,9 +43,6 @@ public class ServiceProviderProfile extends AbstractBaseEntity{
     @Column(name = "available_time", columnDefinition = "JSONB")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> availableTime;
-
-    @Column(name = "location")
-    private String location;
 
     @Column(name = "rating", nullable = false)
     @Builder.Default
