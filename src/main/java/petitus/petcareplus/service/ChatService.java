@@ -198,6 +198,7 @@ public class ChatService {
                             .userAvatarUrl(avatarUrl)
                             .lastMessage(lastMessage.getContent())
                             .lastMessageTime(lastMessage.getCreatedAt())
+                            .lastMessageSenderId(lastMessage.getSenderId())
                             .hasUnreadMessages(unreadCount > 0)
                             .unreadCount(unreadCount)
                             .build();
