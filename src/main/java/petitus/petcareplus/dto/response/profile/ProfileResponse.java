@@ -24,6 +24,8 @@ public class ProfileResponse extends ResponseObject {
 
     private boolean isServiceProvider;
 
+    private String avatarUrl;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -42,6 +44,7 @@ public class ProfileResponse extends ResponseObject {
                 .user(UserResponse.convert(profile.getUser()))
                 .dob(profile.getDob())
                 .gender(profile.getGender())
+                .avatarUrl(profile.getAvatarUrl())
                 .isServiceProvider(profile.isServiceProvider())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
