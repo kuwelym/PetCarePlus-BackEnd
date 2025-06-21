@@ -20,7 +20,6 @@ import petitus.petcareplus.exceptions.ForbiddenException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.*;
 import petitus.petcareplus.repository.*;
-import petitus.petcareplus.utils.Constants;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,13 +35,10 @@ public class BookingService {
     private final ServiceBookingRepository serviceBookingRepository;
     private final UserRepository userRepository;
     private final PetRepository petRepository;
-    private final ServiceRepository serviceRepository;
+    // private final ServiceRepository serviceRepository;
     private final ProviderServiceRepository providerServiceRepository;
     private final MessageSourceService messageSourceService;
     private final WalletService walletService;
-
-    // private static final Logger logger =
-    // LoggerFactory.getLogger(BookingService.class);
 
     @Transactional
     public BookingResponse createBooking(UUID userId, BookingRequest request) {
@@ -50,19 +46,19 @@ public class BookingService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
 
-        // Validate provider
-        User provider = userRepository.findById(request.getProviderId())
-                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("provider_not_found")));
+        // Validate provider service
+        ProviderService providerService = providerServiceRepository.findById(request.getProviderServiceId())
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(messageSourceService.get("provider_service_not_found")));
 
-        if (!provider.getRole().getName().equals(Constants.RoleEnum.SERVICE_PROVIDER)) {
-            throw new BadRequestException(messageSourceService.get("invalid_provider"));
-        }
+        User provider = providerService.getProvider();
+        DefaultService service = providerService.getService();
 
         // Validate time
         validateBookingTime(request.getScheduledStartTime(), request.getScheduledEndTime());
 
         // Check provider availability
-        checkProviderAvailability(request.getProviderId(), request.getScheduledStartTime(),
+        checkProviderAvailability(provider.getId(), request.getScheduledStartTime(),
                 request.getScheduledEndTime());
 
         // Initialize booking
@@ -77,78 +73,46 @@ public class BookingService {
                 .totalPrice(BigDecimal.ZERO)
                 .build();
 
-        // Calculate total price and validate services
-        Set<ServiceBooking> serviceBookings = new HashSet<>();
-        Set<PetBooking> petBookings = new HashSet<>();
-        Map<UUID, BigDecimal> servicePrices = new HashMap<>();
+        // Calculate total price based on number of pets
+        BigDecimal servicePrice = providerService.getCustomPrice() != null ? providerService.getCustomPrice()
+                : service.getBasePrice();
+        BigDecimal totalPrice = servicePrice.multiply(BigDecimal.valueOf(request.getPetList().size()));
+        booking.setTotalPrice(totalPrice);
 
-        for (PetServiceBookingRequest petServiceReq : request.getPetServices()) {
+        // Save booking first
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Create service booking (only one service)
+        ServiceBookingId serviceBookingId = new ServiceBookingId(savedBooking.getId(), service.getId());
+        ServiceBooking serviceBooking = ServiceBooking.builder()
+                .id(serviceBookingId)
+                .booking(savedBooking)
+                .service(service)
+                .price(servicePrice)
+                .build();
+        serviceBookingRepository.save(serviceBooking);
+
+        // Create pet bookings for multiple pets
+        Set<PetBooking> petBookings = new HashSet<>();
+        for (PetServiceBookingRequest petSBR : request.getPetList()) {
             // Validate pet ownership
-            Pet pet = petRepository.findById(petServiceReq.getPetId())
+            Pet pet = petRepository.findById(petSBR.getPetId())
                     .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("pet_not_found")));
 
             if (!pet.getUserId().equals(userId)) {
                 throw new ForbiddenException(messageSourceService.get("pet_not_owned"));
             }
 
-            // Validate service
-            DefaultService service = serviceRepository.findById(petServiceReq.getServiceId())
-                    .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("service_not_found")));
-
-            // Verify provider offers this service
-            ProviderService providerService = providerServiceRepository
-                    .findByProviderIdAndServiceId(request.getProviderId(), petServiceReq.getServiceId())
-                    .orElseThrow(
-                            () -> new BadRequestException(messageSourceService.get("service_not_offered_by_provider")));
-
-            // Calculate price if not already done
-            if (!servicePrices.containsKey(service.getId())) {
-                BigDecimal price = providerService.getCustomPrice() != null ? providerService.getCustomPrice()
-                        : service.getBasePrice();
-                servicePrices.put(service.getId(), price);
-
-                // Add to service bookings
-                ServiceBookingId serviceBookingId = new ServiceBookingId(booking.getId(), service.getId());
-                ServiceBooking serviceBooking = ServiceBooking.builder()
-                        .id(serviceBookingId)
-                        .booking(booking)
-                        .service(service)
-                        .price(price)
-                        .build();
-                serviceBookings.add(serviceBooking);
-            }
-
-            // Add to pet bookings
-            PetBookingId petBookingId = new PetBookingId(booking.getId(), pet.getId(), service.getId());
+            PetBookingId petBookingId = new PetBookingId(savedBooking.getId(), pet.getId(), service.getId());
             PetBooking petBooking = PetBooking.builder()
                     .id(petBookingId)
-                    .booking(booking)
+                    .booking(savedBooking)
                     .pet(pet)
                     .service(service)
                     .build();
             petBookings.add(petBooking);
         }
 
-        // Calculate total price
-        BigDecimal totalPrice = servicePrices.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        booking.setTotalPrice(totalPrice);
-
-        // Save booking
-        Booking savedBooking = bookingRepository.save(booking);
-
-        // Update IDs and save related entities
-        serviceBookings.forEach(sb -> {
-            ServiceBookingId newId = sb.getId();
-            newId.setBookingId(savedBooking.getId());
-            sb.setId(newId);
-        });
-        petBookings.forEach(pb -> {
-            PetBookingId newId = pb.getId();
-            newId.setBookingId(savedBooking.getId());
-            pb.setId(newId);
-        });
-
-        serviceBookingRepository.saveAll(serviceBookings);
         petBookingRepository.saveAll(petBookings);
 
         // Return response
@@ -460,6 +424,8 @@ public class BookingService {
 
         return BookingResponse.builder()
                 .id(booking.getId())
+                .serviceName(booking.getProviderService().getService().getName())
+                .providerServiceId(booking.getProviderService().getId())
                 .userId(booking.getUser().getId())
                 .userName(booking.getUser().getFullName())
                 .providerId(booking.getProvider().getId())

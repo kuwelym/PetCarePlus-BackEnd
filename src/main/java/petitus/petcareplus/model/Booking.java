@@ -33,6 +33,10 @@ public class Booking extends AbstractBaseEntity {
     @JoinColumn(name = "provider_id", nullable = false)
     private User provider;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "provider_service_id", nullable = false)
+    private ProviderService providerService;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default
