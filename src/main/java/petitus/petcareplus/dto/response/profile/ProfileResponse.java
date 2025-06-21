@@ -31,6 +31,10 @@ public class ProfileResponse extends ResponseObject {
     private LocalDateTime deletedAt;
 
     public static ProfileResponse convert(Profile profile) {
+        if (profile == null) {
+            return null;
+        }
+        
         if (profile.isServiceProvider())
             return ServiceProviderProfileResponse.convert(profile.getServiceProviderProfile());
         ProfileResponse.ProfileResponseBuilder<?, ?> builder = ProfileResponse.builder()

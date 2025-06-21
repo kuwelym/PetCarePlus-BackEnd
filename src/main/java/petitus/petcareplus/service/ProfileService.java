@@ -67,6 +67,16 @@ public class ProfileService {
     }
 
     @Transactional
+    public void createDefaultProfile(User user) {
+        Profile defaultProfile = Profile.builder()
+                .user(user)
+                .isServiceProvider(false)
+                .build();
+        
+        profileRepository.save(defaultProfile);
+    }
+
+    @Transactional
     public void saveServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
         User user = userService.getUser();
         validateProfileExists(user.getId());
