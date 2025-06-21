@@ -8,7 +8,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import petitus.petcareplus.dto.annotation.FieldMatch;
 import petitus.petcareplus.dto.annotation.Password;
-import petitus.petcareplus.model.Role;
 
 @Getter
 @Setter
@@ -28,7 +27,7 @@ public class UpdateUserRequest {
 
     private String lastName;
 
-    private Role role;
+    private String role;
 
     @Builder.Default
     private Boolean isEmailVerified = false;

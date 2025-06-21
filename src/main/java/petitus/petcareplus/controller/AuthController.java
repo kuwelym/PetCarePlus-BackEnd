@@ -11,9 +11,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.auth.*;
+import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
-import petitus.petcareplus.model.User;
 import petitus.petcareplus.service.AuthService;
 import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.UserService;
@@ -135,8 +135,8 @@ public class AuthController {
     @Operation(tags = {
             "Authentication"}, summary = "Get current user", description = "API để lấy thông tin user hiện tại", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser() {
-        return ResponseEntity.ok(userService.getUser());
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        return ResponseEntity.ok(UserResponse.convert(userService.getUser()));
     }
 
     @PostMapping("/change-password")
