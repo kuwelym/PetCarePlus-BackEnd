@@ -1,6 +1,10 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,7 +14,11 @@ import petitus.petcareplus.dto.response.service.ServiceResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.DefaultService;
+import petitus.petcareplus.model.spec.ServiceFilterSpecification;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.ServiceCriteria;
 import petitus.petcareplus.repository.ServiceRepository;
+import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,10 +29,18 @@ import java.util.stream.Collectors;
 public class ServiceService {
     private final ServiceRepository serviceRepository;
 
+    // old method
     public List<ServiceResponse> getAllServices() {
         return serviceRepository.findAll().stream()
                 .map(this::mapToServiceResponse)
                 .collect(Collectors.toList());
+    }
+
+    // new method with pagination
+    public Page<ServiceResponse> getAllServices(PaginationCriteria pagination) {
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<DefaultService> services = serviceRepository.findAll(pageRequest);
+        return services.map(this::mapToServiceResponse);
     }
 
     public ServiceResponse getServiceById(UUID id) {
@@ -89,6 +105,27 @@ public class ServiceService {
             throw new ResourceNotFoundException("Service not found with id: " + id);
         }
         serviceRepository.deleteById(id);
+    }
+
+    public Page<ServiceResponse> searchServices(ServiceCriteria criteria, PaginationCriteria pagination) {
+        // Tạo Specification từ criteria
+        Specification<DefaultService> specification = new ServiceFilterSpecification(criteria);
+
+        // Tạo PageRequest từ pagination
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+
+        // Execute query với pagination + filtering
+        Page<DefaultService> services = serviceRepository.findAll(specification, pageRequest);
+
+        // Convert Entity → Response DTO
+        return services.map(this::mapToServiceResponse);
+    }
+
+    public Page<ServiceResponse> searchServices(String query, PaginationCriteria pagination) {
+        Specification<DefaultService> specification = ServiceFilterSpecification.nameContains(query);
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<DefaultService> services = serviceRepository.findAll(specification, pageRequest);
+        return services.map(this::mapToServiceResponse);
     }
 
     public List<ServiceResponse> searchServices(String query) {
