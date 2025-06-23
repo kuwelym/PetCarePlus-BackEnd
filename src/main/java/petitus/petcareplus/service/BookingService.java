@@ -3,6 +3,7 @@ package petitus.petcareplus.service;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import petitus.petcareplus.dto.request.booking.BookingStatusUpdateRequest;
 import petitus.petcareplus.dto.request.booking.PetServiceBookingRequest;
 import petitus.petcareplus.dto.response.booking.BookingPetServiceResponse;
 import petitus.petcareplus.dto.response.booking.BookingResponse;
+import petitus.petcareplus.utils.PageRequestBuilder;
 import petitus.petcareplus.utils.enums.BookingStatus;
 import petitus.petcareplus.utils.enums.PaymentStatus;
 import petitus.petcareplus.utils.enums.TransactionStatus;
@@ -19,6 +21,7 @@ import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ForbiddenException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.*;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.repository.*;
 
 import java.math.BigDecimal;
@@ -223,9 +226,16 @@ public class BookingService {
         return mapToBookingResponse(booking);
     }
 
-    public Page<BookingResponse> getUserBookings(UUID userId, Pageable pageable) {
-        return bookingRepository.findAllByUserId(userId, pageable)
-                .map(this::mapToBookingResponse);
+    public Page<BookingResponse> getUserBookings(UUID userId, PaginationCriteria pagination) {
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Booking> bookings = bookingRepository.findAllByUserId(userId, pageRequest);
+        return bookings.map(this::mapToBookingResponse);
+    }
+
+    public Page<BookingResponse> getProviderBookings(UUID providerId, PaginationCriteria pagination) {
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Booking> bookings = bookingRepository.findAllByProviderId(providerId, pageRequest);
+        return bookings.map(this::mapToBookingResponse);
     }
 
     public Page<BookingResponse> getProviderBookings(UUID providerId, Pageable pageable) {
@@ -233,31 +243,35 @@ public class BookingService {
                 .map(this::mapToBookingResponse);
     }
 
-    public List<BookingResponse> getUserBookingsByStatus(UUID userId, BookingStatus status) {
+    public Page<BookingResponse> getUserBookingsByStatus(UUID userId, BookingStatus status,
+            PaginationCriteria pagination) {
         try {
-            return bookingRepository.findAllByUserIdAndStatus(userId, status).stream()
-                    .map(this::mapToBookingResponse)
-                    .collect(Collectors.toList());
+
+            PageRequest pageRequest = PageRequestBuilder.build(pagination);
+            Page<Booking> bookings = bookingRepository.findAllByUserIdAndStatus(userId, status, pageRequest);
+            return bookings.map(this::mapToBookingResponse);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(messageSourceService.get("invalid_booking_status"));
         }
     }
 
-    public List<BookingResponse> getProviderBookingsByStatus(UUID providerId, BookingStatus status) {
+    public Page<BookingResponse> getProviderBookingsByStatus(UUID providerId, BookingStatus status,
+            PaginationCriteria pagination) {
         try {
-            return bookingRepository.findAllByProviderIdAndStatus(providerId, status).stream()
-                    .map(this::mapToBookingResponse)
-                    .collect(Collectors.toList());
+            PageRequest pageRequest = PageRequestBuilder.build(pagination);
+            Page<Booking> bookings = bookingRepository.findAllByProviderIdAndStatus(providerId, status, pageRequest);
+            return bookings.map(this::mapToBookingResponse);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(messageSourceService.get("invalid_booking_status"));
         }
     }
 
-    public List<BookingResponse> getProviderBookingsForDateRange(UUID providerId, LocalDateTime startDate,
-            LocalDateTime endDate) {
-        return bookingRepository.findAllByProviderIdBetweenDates(providerId, startDate, endDate).stream()
-                .map(this::mapToBookingResponse)
-                .collect(Collectors.toList());
+    public Page<BookingResponse> getProviderBookingsForDateRange(UUID providerId, LocalDateTime startDate,
+            LocalDateTime endDate, PaginationCriteria pagination) {
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Booking> bookings = bookingRepository.findAllByProviderIdBetweenDates(providerId, startDate, endDate,
+                pageRequest);
+        return bookings.map(this::mapToBookingResponse);
     }
 
     // Helper methods

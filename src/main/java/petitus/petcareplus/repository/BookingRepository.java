@@ -35,17 +35,32 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.user.id = :userId AND b.status = :status ORDER BY b.createdAt DESC")
         List<Booking> findAllByUserIdAndStatus(@Param("userId") UUID userId, @Param("status") BookingStatus status);
 
+        @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.user.id = :userId AND b.status = :status ORDER BY b.createdAt DESC")
+        Page<Booking> findAllByUserIdAndStatus(@Param("userId") UUID userId, @Param("status") BookingStatus status,
+                        Pageable pageable);
+
         @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.provider.id = :providerId AND b.status = :status ORDER BY b.createdAt DESC")
         List<Booking> findAllByProviderIdAndStatus(@Param("providerId") UUID providerId,
                         @Param("status") BookingStatus status);
 
+        @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.provider.id = :providerId AND b.status = :status ORDER BY b.createdAt DESC")
+        Page<Booking> findAllByProviderIdAndStatus(@Param("providerId") UUID providerId,
+                        @Param("status") BookingStatus status,
+                        Pageable pageable);
+
         @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.scheduledStartTime >= :startDate AND b.scheduledEndTime <= :endDate ORDER BY b.scheduledStartTime ASC")
-        List<Booking> findAllBetweenDates(@Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate);
+        Page<Booking> findAllBetweenDates(@Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
+        @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.user.id = :userId AND b.scheduledStartTime >= :startDate AND b.scheduledEndTime <= :endDate ORDER BY b.scheduledStartTime ASC")
+        Page<Booking> findAllByUserIdBetweenDates(@Param("userId") UUID userId,
+                        @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
 
         @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.provider.id = :providerId AND b.scheduledStartTime >= :startDate AND b.scheduledEndTime <= :endDate ORDER BY b.scheduledStartTime ASC")
-        List<Booking> findAllByProviderIdBetweenDates(@Param("providerId") UUID providerId,
-                        @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+        Page<Booking> findAllByProviderIdBetweenDates(@Param("providerId") UUID providerId,
+                        @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
 
         @Query("SELECT COUNT(b) FROM Booking b WHERE b.deletedAt IS NULL AND b.status <> 'CANCELLED' AND b.provider.id = :providerId AND ((b.scheduledStartTime <= :endTime AND b.scheduledEndTime >= :startTime) OR (b.scheduledStartTime <= :startTime AND b.scheduledEndTime >= :startTime)) AND b.status NOT IN ('CANCELLED', 'COMPLETED')")
         Long countOverlappingBookings(@Param("providerId") UUID providerId, @Param("startTime") LocalDateTime startTime,

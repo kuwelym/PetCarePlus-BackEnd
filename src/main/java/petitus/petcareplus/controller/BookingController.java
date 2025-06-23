@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.booking.BookingRequest;
 import petitus.petcareplus.dto.request.booking.BookingStatusUpdateRequest;
 import petitus.petcareplus.dto.response.booking.BookingResponse;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.BookingService;
 import petitus.petcareplus.utils.enums.BookingStatus;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -83,15 +81,20 @@ public class BookingController {
     @Operation(summary = "Get user's bookings", description = "Get all bookings made by the current user")
     public ResponseEntity<Page<BookingResponse>> getUserBookings(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String direction,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "updateAt", "createdAt" }) // Allowed sort fields
+                .build();
 
-        Page<BookingResponse> bookings = bookingService.getUserBookings(userDetails.getId(), pageRequest);
+        Page<BookingResponse> bookings = bookingService.getUserBookings(userDetails.getId(), pagination);
         return ResponseEntity.ok(bookings);
     }
 
@@ -100,50 +103,93 @@ public class BookingController {
     @Operation(summary = "Get provider's bookings", description = "Get all bookings for the current provider")
     public ResponseEntity<Page<BookingResponse>> getProviderBookings(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String direction,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "updateAt", "createdAt" }) // Allowed sort fields
+                .build();
 
-        Page<BookingResponse> bookings = bookingService.getProviderBookings(userDetails.getId(), pageRequest);
+        Page<BookingResponse> bookings = bookingService.getProviderBookings(userDetails.getId(), pagination);
         return ResponseEntity.ok(bookings);
     }
 
     @GetMapping("/user/status/{status}")
     @PreAuthorize("hasAuthority('USER')")
     @Operation(summary = "Get user's bookings by status", description = "Get all bookings with a specific status for the current user")
-    public ResponseEntity<List<BookingResponse>> getUserBookingsByStatus(
+    public ResponseEntity<Page<BookingResponse>> getUserBookingsByStatus(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @PathVariable BookingStatus status) {
+            @PathVariable BookingStatus status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        List<BookingResponse> bookings = bookingService.getUserBookingsByStatus(userDetails.getId(), status);
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "updateAt", "createdAt" }) // Allowed sort fields
+                .build();
+
+        Page<BookingResponse> bookings = bookingService.getUserBookingsByStatus(userDetails.getId(), status,
+                pagination);
         return ResponseEntity.ok(bookings);
     }
 
     @GetMapping("/provider/status/{status}")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Get provider's bookings by status", description = "Get all bookings with a specific status for the current provider")
-    public ResponseEntity<List<BookingResponse>> getProviderBookingsByStatus(
+    public ResponseEntity<Page<BookingResponse>> getProviderBookingsByStatus(
             @AuthenticationPrincipal JwtUserDetails userDetails,
-            @PathVariable BookingStatus status) {
+            @PathVariable BookingStatus status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        List<BookingResponse> bookings = bookingService.getProviderBookingsByStatus(userDetails.getId(), status);
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "updateAt", "createdAt" }) // Allowed sort fields
+                .build();
+
+        Page<BookingResponse> bookings = bookingService.getProviderBookingsByStatus(userDetails.getId(), status,
+                pagination);
         return ResponseEntity.ok(bookings);
     }
 
     @GetMapping("/provider/schedule")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Get provider's schedule", description = "Get all bookings for a specific time range")
-    public ResponseEntity<List<BookingResponse>> getProviderSchedule(
+    public ResponseEntity<Page<BookingResponse>> getProviderSchedule(
             @AuthenticationPrincipal JwtUserDetails userDetails,
             @Parameter(description = "Start date-time") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "End date-time") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @Parameter(description = "End date-time") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        List<BookingResponse> bookings = bookingService.getProviderBookingsForDateRange(userDetails.getId(), start,
-                end);
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "scheduledStartTime", "scheduledEndTime" }) // Allowed sort fields
+                .build();
+
+        Page<BookingResponse> bookings = bookingService.getProviderBookingsForDateRange(userDetails.getId(), start,
+                end, pagination);
         return ResponseEntity.ok(bookings);
     }
 }
