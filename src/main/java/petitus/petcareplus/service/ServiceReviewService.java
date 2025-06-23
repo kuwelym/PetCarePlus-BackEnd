@@ -5,7 +5,8 @@ import lombok.RequiredArgsConstructor;
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.review.ServiceReviewRequest;
@@ -18,10 +19,14 @@ import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.ServiceReview;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.profile.ServiceProviderProfile;
+import petitus.petcareplus.model.spec.ServiceReviewSpecification;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.ServiceReviewCriteria;
 import petitus.petcareplus.repository.BookingRepository;
 import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceReviewRepository;
 import petitus.petcareplus.repository.UserRepository;
+import petitus.petcareplus.utils.PageRequestBuilder;
 import petitus.petcareplus.repository.ServiceProviderProfileRepository;
 
 import java.time.LocalDateTime;
@@ -41,8 +46,19 @@ public class ServiceReviewService {
     private final ServiceProviderProfileRepository serviceProviderProfileRepository;
     private final MessageSourceService messageSourceService;
 
-    // private static final Logger logger =
-    // LoggerFactory.getLogger(BookingService.class);
+    public Page<ServiceReviewResponse> getAllReviews(ServiceReviewCriteria criteria, PaginationCriteria pagination) {
+        // Build specification từ criteria
+        Specification<ServiceReview> specification = buildSpecification(criteria);
+
+        // Build page request từ pagination
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+
+        // Execute query
+        Page<ServiceReview> reviews = serviceReviewRepository.findAll(specification, pageRequest);
+
+        // Convert to response DTO
+        return reviews.map(this::mapToServiceReviewResponse);
+    }
 
     @Transactional
     public ServiceReviewResponse createReview(ServiceReviewRequest request) {
@@ -160,26 +176,44 @@ public class ServiceReviewService {
         return mapToServiceReviewResponse(review);
     }
 
-    public Page<ServiceReviewResponse> getUserReviews(Pageable pageable) {
+    public Page<ServiceReviewResponse> getUserReviews(PaginationCriteria pagination) {
         UUID userId = userService.getCurrentUserId();
-        return serviceReviewRepository.findAllByUserId(userId, pageable)
-                .map(this::mapToServiceReviewResponse);
+        ServiceReviewCriteria criteria = ServiceReviewCriteria.builder()
+                .userId(userId)
+                .isDeleted(false)
+                .build();
+        return getAllReviews(criteria, pagination);
     }
 
-    public Page<ServiceReviewResponse> getServiceReviews(UUID providerServiceId, Pageable pageable) {
-        return serviceReviewRepository.findByProviderServiceId(providerServiceId, pageable)
-                .map(this::mapToServiceReviewResponse);
+    public Page<ServiceReviewResponse> getServiceReviews(UUID providerServiceId, ServiceReviewCriteria criteria,
+            PaginationCriteria pagination) {
+        // Validate provider service exists
+        if (!providerServiceRepository.existsById(providerServiceId)) {
+            throw new ResourceNotFoundException(messageSourceService.get("provider_service_not_found"));
+        }
+        criteria.setProviderServiceId(providerServiceId);
+        criteria.setIsDeleted(false);
+        return getAllReviews(criteria, pagination);
     }
 
-    public Page<ServiceReviewResponse> getServiceReviewsByProviderService(UUID serviceId, UUID providerId,
-            Pageable pageable) {
-        return serviceReviewRepository.findAllByServiceIdAndProviderId(serviceId, providerId, pageable)
-                .map(this::mapToServiceReviewResponse);
-    }
+    // public Page<ServiceReviewResponse> getServiceReviewsByProviderService(UUID
+    // serviceId, UUID providerId,
+    // Pageable pageable) {
+    // return serviceReviewRepository.findAllByServiceIdAndProviderId(serviceId,
+    // providerId, pageable)
+    // .map(this::mapToServiceReviewResponse);
+    // }
 
-    public Page<ServiceReviewResponse> getProviderReviews(UUID providerId, Pageable pageable) {
-        return serviceReviewRepository.findAllByProviderId(providerId, pageable)
-                .map(this::mapToServiceReviewResponse);
+    public Page<ServiceReviewResponse> getProviderReviews(UUID providerId, PaginationCriteria pagination) {
+        // Validate provider exists
+        if (!userRepository.existsById(providerId)) {
+            throw new ResourceNotFoundException(messageSourceService.get("provider_not_found"));
+        }
+        ServiceReviewCriteria criteria = ServiceReviewCriteria.builder()
+                .providerId(providerId)
+                .isDeleted(false)
+                .build();
+        return getAllReviews(criteria, pagination);
     }
 
     public Double getProviderAverageRating(UUID providerId) {
@@ -209,6 +243,27 @@ public class ServiceReviewService {
             profile.setRating(averageRating);
             serviceProviderProfileRepository.save(profile);
         }
+    }
+
+    private Specification<ServiceReview> buildSpecification(ServiceReviewCriteria criteria) {
+        if (criteria == null) {
+            // Default: chỉ lấy active reviews
+            return ServiceReviewSpecification.isActive();
+        }
+
+        return Specification
+                .where(ServiceReviewSpecification.searchByQuery(criteria.getQuery()))
+                .and(ServiceReviewSpecification.byUserId(criteria.getUserId()))
+                .and(ServiceReviewSpecification.byProviderId(criteria.getProviderId()))
+                .and(ServiceReviewSpecification.byServiceId(criteria.getServiceId()))
+                .and(ServiceReviewSpecification.byProviderServiceId(criteria.getProviderServiceId()))
+                .and(ServiceReviewSpecification.ratingGreaterThanOrEqual(criteria.getMinRating()))
+                .and(ServiceReviewSpecification.ratingLessThanOrEqual(criteria.getMaxRating()))
+                .and(ServiceReviewSpecification.createdAfter(criteria.getCreatedAtStart()))
+                .and(ServiceReviewSpecification.createdBefore(criteria.getCreatedAtEnd()))
+                .and(ServiceReviewSpecification.hasComment(criteria.getHasComment()))
+                .and(ServiceReviewSpecification.isDeleted(criteria.getIsDeleted()))
+                .and(ServiceReviewSpecification.byRating(criteria.getRating()));
     }
 
     private ServiceReviewResponse mapToServiceReviewResponse(ServiceReview review) {
