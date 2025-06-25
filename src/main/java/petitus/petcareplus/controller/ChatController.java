@@ -50,6 +50,17 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getConversation(userId, pageable));
     }
 
+    @GetMapping("/conversations/{userId}/keyset")
+    @Operation(summary = "Get conversation messages with keyset pagination", description = "Get conversation messages using keyset pagination for efficient mobile scrolling", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<List<ChatMessageResponse>> getConversationWithKeyset(
+            @Parameter(description = "User ID to get conversation with") @PathVariable UUID userId,
+            @Parameter(description = "Timestamp of the last message received in the previous page")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastMessageTime,
+            @Parameter(description = "Maximum number of messages to return") @RequestParam(defaultValue = "20") int limit) {
+
+        return ResponseEntity.ok(chatService.getConversationWithKeyset(userId, lastMessageTime, limit));
+    }
+
     @GetMapping("/conversations")
     @Operation(summary = "Get all conversations with keyset pagination", description = "Get all conversations using keyset pagination for efficient mobile scrolling", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<List<ConversationResponse>> getAllConversations(
