@@ -68,6 +68,7 @@ public class BookingService {
         Booking booking = Booking.builder()
                 .user(user)
                 .provider(provider)
+                .providerService(providerService)
                 .scheduledStartTime(request.getScheduledStartTime())
                 .scheduledEndTime(request.getScheduledEndTime())
                 .note(request.getNote())

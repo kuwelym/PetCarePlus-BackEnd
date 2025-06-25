@@ -21,8 +21,8 @@ public final class UserFilterSpecification implements Specification<User> {
 
     @Override
     public Predicate toPredicate(@NonNull final Root<User> root,
-                                 @NonNull final CriteriaQuery<?> query,
-                                 @NonNull final CriteriaBuilder builder) {
+            @NonNull final CriteriaQuery<?> query,
+            @NonNull final CriteriaBuilder builder) {
         if (criteria == null) {
             return null;
         }
@@ -30,33 +30,28 @@ public final class UserFilterSpecification implements Specification<User> {
         List<Predicate> predicates = new ArrayList<>();
 
         if (criteria.getRoles() != null && !criteria.getRoles().isEmpty()) {
-            Join<User, Role> roleJoin = root.join("roles");
+            Join<User, Role> roleJoin = root.join("role");
             predicates.add(
-                    builder.in(roleJoin.get("name")).value(criteria.getRoles())
-            );
+                    builder.in(roleJoin.get("name")).value(criteria.getRoles()));
         }
 
-        if(criteria.getQuery() != null) {
+        if (criteria.getQuery() != null) {
             String q = String.format("%%%s%%", criteria.getQuery());
             predicates.add(
                     builder.or(
                             builder.like(builder.lower(root.get("email")), "%" + q + "%"),
                             builder.like(builder.lower(root.get("name")), "%" + q + "%"),
-                            builder.like(builder.lower(root.get("lastName")), "%" + q + "%")
-                    )
-            );
+                            builder.like(builder.lower(root.get("lastName")), "%" + q + "%")));
         }
 
         if (criteria.getCreatedAtStart() != null) {
             predicates.add(
-                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart())
-            );
+                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart()));
         }
 
         if (criteria.getCreatedAtEnd() != null) {
             predicates.add(
-                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd())
-            );
+                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd()));
         }
 
         if (criteria.getIsBlocked() != null) {
@@ -64,6 +59,13 @@ public final class UserFilterSpecification implements Specification<User> {
                 predicates.add(builder.isNotNull(root.get("blockedAt")));
             } else {
                 predicates.add(builder.isNull(root.get("blockedAt")));
+            }
+        }
+        if (criteria.getIsEmailActivated() != null) {
+            if (criteria.getIsEmailActivated()) {
+                predicates.add(builder.isNotNull(root.get("emailVerifiedAt")));
+            } else {
+                predicates.add(builder.isNull(root.get("emailVerifiedAt")));
             }
         }
 

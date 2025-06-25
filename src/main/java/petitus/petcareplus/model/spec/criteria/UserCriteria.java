@@ -20,7 +20,7 @@ public final class UserCriteria {
 
     private LocalDateTime createdAtEnd;
 
-    private boolean isEmailActivated;
+    private Boolean isEmailActivated;
 
     private String query;
 

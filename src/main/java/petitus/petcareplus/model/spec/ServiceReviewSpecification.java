@@ -123,6 +123,7 @@ public class ServiceReviewSpecification {
                         criteriaBuilder.notEqual(root.get("comment"), ""));
             } else {
                 return criteriaBuilder.or(
+
                         criteriaBuilder.isNull(root.get("comment")),
                         criteriaBuilder.equal(root.get("comment"), ""));
             }
