@@ -84,8 +84,7 @@ public class ChatService {
 
             Map<String, String> data = createFcmNotificationData(
                     chatMessage.getId().toString(),
-                    sender.getId().toString()
-            );
+                    sender.getId().toString());
 
             for (String token : receiverTokens) {
                 firebaseMessagingService.sendNotification(token, title, body, data);
@@ -114,8 +113,7 @@ public class ChatService {
 
         chatMessageRepository.updateChatMessagesAsRead(
                 otherUserId,
-                currentUserId
-        );
+                currentUserId);
     }
 
     public long getUnreadMessageCount() {
@@ -127,8 +125,7 @@ public class ChatService {
         UUID currentUserId = userService.getCurrentUserId();
         List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithTimes(
                 currentUserId,
-                limit
-        );
+                limit);
 
         List<UUID> userIds = extractUserIds(conversationResults);
         return buildConversationResponses(currentUserId, userIds);
@@ -136,14 +133,12 @@ public class ChatService {
 
     public List<ConversationResponse> getAllConversationsWithKeyset(
             LocalDateTime lastMessageTime,
-            int limit
-    ) {
+            int limit) {
         UUID currentUserId = userService.getCurrentUserId();
         List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithKeyset(
                 currentUserId,
                 lastMessageTime,
-                limit
-        );
+                limit);
 
         List<UUID> userIds = extractUserIds(conversationResults);
         return buildConversationResponses(currentUserId, userIds);
@@ -173,8 +168,7 @@ public class ChatService {
 
                     ChatMessage lastMessage = chatMessageRepository.findLatestMessageBetweenUsers(
                             currentUserId,
-                            userId
-                    );
+                            userId);
 
                     if (lastMessage == null) {
                         log.warn("No messages found between users {} and {}", currentUserId, userId);
@@ -218,4 +212,4 @@ public class ChatService {
                 .isRead(message.getIsRead())
                 .build();
     }
-} 
+}

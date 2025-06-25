@@ -17,6 +17,4 @@ public class PetServiceBookingRequest {
     @NotNull(message = "Pet ID is required")
     private UUID petId;
 
-    @NotNull(message = "Service ID is required")
-    private UUID serviceId;
 }

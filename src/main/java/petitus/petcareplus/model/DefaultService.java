@@ -3,22 +3,20 @@ package petitus.petcareplus.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "services")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DefaultService {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+public class DefaultService extends AbstractBaseEntity {
 
     @Column(nullable = false, unique = true)
     private String name;

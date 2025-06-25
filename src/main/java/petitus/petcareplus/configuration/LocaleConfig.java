@@ -23,7 +23,7 @@ public class LocaleConfig {
 
     @Bean
     public LocaleResolver localeResolver(@Value("${application.default-locale:en}") final String defaultLocale,
-                                         @Value("${application.default-timezone:UTC}") final String defaultTimezone) {
+            @Value("${application.default-timezone:UTC}") final String defaultTimezone) {
         AcceptHeaderLocaleResolver localResolver = new AcceptHeaderLocaleResolver();
         localResolver.setDefaultLocale(new Locale.Builder().setLanguage(defaultLocale).build());
         TimeZone.setDefault(TimeZone.getTimeZone(defaultTimezone));
