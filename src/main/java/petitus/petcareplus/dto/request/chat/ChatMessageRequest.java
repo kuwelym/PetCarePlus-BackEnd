@@ -11,6 +11,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ChatMessageRequest {
     
+    private UUID senderId;
+    
     @NotNull
     private UUID recipientId;
     

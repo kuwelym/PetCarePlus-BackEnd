@@ -12,6 +12,7 @@ import petitus.petcareplus.service.ChatService;
 import petitus.petcareplus.service.WebSocketService;
 
 import java.security.Principal;
+import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,6 +26,8 @@ public class WebSocketController {
             @Payload ChatMessageRequest chatMessageRequest,
             Principal principal
     ) {
+        chatMessageRequest.setSenderId(UUID.fromString(principal.getName()));
+        
         chatService.sendMessage(chatMessageRequest, principal);
 
         webSocketService.sendMessage(chatMessageRequest);
