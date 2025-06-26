@@ -51,8 +51,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
     );
 
     @Query(value = """
-        SELECT COUNT(m) FROM ChatMessage m
-        WHERE m.recipientId = :userId AND m.isRead = false
+        SELECT COUNT(*) FROM chat_messages
+        WHERE recipient_id = :userId AND is_read = false
         """, nativeQuery = true)
     long countUnreadMessages(@Param("userId") UUID userId);
     

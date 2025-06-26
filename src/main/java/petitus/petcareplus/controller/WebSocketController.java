@@ -6,7 +6,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
-import petitus.petcareplus.dto.request.chat.ReadReceipt;
+import petitus.petcareplus.dto.request.chat.ReadReceiptRequest;
 import petitus.petcareplus.dto.request.chat.TypingEvent;
 import petitus.petcareplus.service.ChatService;
 import petitus.petcareplus.service.WebSocketService;
@@ -41,7 +41,20 @@ public class WebSocketController {
     }
 
     @MessageMapping("/chat.read")
-    public void handleMessageRead(@Payload ReadReceipt receipt) {
+    public void handleMessageRead(@Payload ReadReceiptRequest receipt) {
         webSocketService.notifyMessageRead(receipt);
+    }
+    
+    @MessageMapping("/chat.markAsRead")
+    public void handleMarkAsRead(
+            @Payload ReadReceiptRequest readReceiptRequest,
+            Principal principal
+    ) {
+        try {
+            webSocketService.handleMarkAsRead(readReceiptRequest,
+                UUID.fromString(principal.getName()));
+        } catch (Exception e) {
+            System.err.println("Error processing mark as read request: " + e.getMessage());
+        }
     }
 } 

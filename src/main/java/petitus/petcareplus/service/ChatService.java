@@ -134,9 +134,7 @@ public class ChatService {
     }
 
     @Transactional
-    public void markMessageAsRead(UUID otherUserId) {
-        UUID currentUserId = userService.getCurrentUserId();
-
+    public void markMessageAsRead(UUID currentUserId, UUID otherUserId) {
         chatMessageRepository.updateChatMessagesAsRead(
                 otherUserId,
                 currentUserId);
