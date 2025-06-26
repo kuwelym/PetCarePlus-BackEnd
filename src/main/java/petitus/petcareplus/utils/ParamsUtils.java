@@ -5,9 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class VnpayUtils {
+public class ParamsUtils {
 
-    public static Map<String, String> extractRawVnpParams(String queryString) {
+    public static Map<String, String> extractRawParams(String queryString) {
         Map<String, String> params = new HashMap<>();
         String[] pairs = queryString.split("&");
         for (String pair : pairs) {

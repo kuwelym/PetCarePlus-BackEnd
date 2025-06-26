@@ -56,14 +56,45 @@ public class ProfileService {
         profileRepository.save(Profile.builder()
                 .gender(profileRequest.getGender())
                 .dob(LocalDate.parse(profileRequest.getDob()))
+                .avatarUrl(profileRequest.getAvatarUrl())
+                .location(profileRequest.getLocation())
+                .about(profileRequest.getAbout())
                 .user(user)
                 .build());
+    }
+
+    @Transactional
+    public void updateProfile(ProfileRequest profileRequest) {
+        User user = userService.getUser();
+        Profile existingProfile = profileRepository.findByUserId(user.getId());
+        
+        if (existingProfile == null) {
+            throw new RuntimeException(messageSourceService.get("profile_not_found"));
+        }
+
+        existingProfile.setGender(profileRequest.getGender());
+        existingProfile.setAvatarUrl(profileRequest.getAvatarUrl());
+        existingProfile.setDob(LocalDate.parse(profileRequest.getDob()));
+        existingProfile.setLocation(profileRequest.getLocation());
+        existingProfile.setAbout(profileRequest.getAbout());
+        
+        profileRepository.save(existingProfile);
     }
 
     private void validateProfileExists(UUID userId) {
         if (profileRepository.findByUserId(userId) != null) {
             throw new DataExistedException(messageSourceService.get("profile_exists"));
         }
+    }
+
+    @Transactional
+    public void createDefaultProfile(User user) {
+        Profile defaultProfile = Profile.builder()
+                .user(user)
+                .isServiceProvider(false)
+                .build();
+        
+        profileRepository.save(defaultProfile);
     }
 
     @Transactional
@@ -79,6 +110,9 @@ public class ProfileService {
                     .user(user)
                     .dob(LocalDate.parse(serviceProviderProfileRequest.getDob()))
                     .gender(serviceProviderProfileRequest.getGender())
+                    .avatarUrl(serviceProviderProfileRequest.getAvatarUrl())
+                    .location(serviceProviderProfileRequest.getLocation())
+                    .about(serviceProviderProfileRequest.getAbout())
                     .build();
             existingProfile = profileRepository.save(existingProfile);
         }
@@ -86,13 +120,11 @@ public class ProfileService {
         // Create a new ServiceProviderProfile linked to the existing Profile
         ServiceProviderProfile serviceProviderProfile = ServiceProviderProfile.builder()
                 .profile(existingProfile)
-                .about(serviceProviderProfileRequest.getAbout())
                 .contactEmail(serviceProviderProfileRequest.getContactEmail())
                 .contactPhone(serviceProviderProfileRequest.getContactPhone())
                 .availableTime(serviceProviderProfileRequest.getAvailableTime())
                 .imageUrls(serviceProviderProfileRequest.getImageUrls())
                 .skills(serviceProviderProfileRequest.getSkills())
-                .location(serviceProviderProfileRequest.getLocation())
                 .rating(serviceProviderProfileRequest.getRating())
                 .build();
 
@@ -100,6 +132,41 @@ public class ProfileService {
         existingProfile.setServiceProviderProfile(serviceProviderProfile);
 
         serviceProviderProfileRepository.save(serviceProviderProfile);
+    }
+
+    @Transactional
+    public void updateServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
+        User user = userService.getUser();
+        Profile existingProfile = findByUserId(user.getId());
+        
+        if (existingProfile == null) {
+            throw new RuntimeException(messageSourceService.get("profile_not_found"));
+        }
+        
+        ServiceProviderProfile existingServiceProviderProfile = existingProfile.getServiceProviderProfile();
+        
+        if (existingServiceProviderProfile == null) {
+            throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
+        }
+
+        // Update basic profile information (including location and about)
+        existingProfile.setGender(serviceProviderProfileRequest.getGender());
+        existingProfile.setDob(LocalDate.parse(serviceProviderProfileRequest.getDob()));
+        existingProfile.setAvatarUrl(serviceProviderProfileRequest.getAvatarUrl());
+        existingProfile.setLocation(serviceProviderProfileRequest.getLocation());
+        existingProfile.setAbout(serviceProviderProfileRequest.getAbout());
+
+        // Update service provider specific information
+        existingServiceProviderProfile.setContactEmail(serviceProviderProfileRequest.getContactEmail());
+        existingServiceProviderProfile.setContactPhone(serviceProviderProfileRequest.getContactPhone());
+        existingServiceProviderProfile.setAvailableTime(serviceProviderProfileRequest.getAvailableTime());
+        existingServiceProviderProfile.setImageUrls(serviceProviderProfileRequest.getImageUrls());
+        existingServiceProviderProfile.setSkills(serviceProviderProfileRequest.getSkills());
+        existingServiceProviderProfile.setRating(serviceProviderProfileRequest.getRating());
+
+        // Save both the profile and service provider profile
+        profileRepository.save(existingProfile);
+        serviceProviderProfileRepository.save(existingServiceProviderProfile);
     }
 
 }

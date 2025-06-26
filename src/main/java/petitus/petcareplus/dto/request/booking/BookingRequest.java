@@ -20,8 +20,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BookingRequest {
 
-    @NotNull(message = "Provider ID is required")
-    private UUID providerId;
+    @NotNull(message = "Provider service ID is required")
+    private UUID providerServiceId;
 
     @NotNull(message = "Scheduled start time is required")
     @Future(message = "Scheduled start time must be in the future")
@@ -33,7 +33,7 @@ public class BookingRequest {
 
     private String note;
 
-    @NotEmpty(message = "At least one pet and service must be selected")
-    @Size(min = 1, message = "At least one pet and service must be selected")
-    private List<@Valid PetServiceBookingRequest> petServices;
+    @NotEmpty(message = "At least one pet must be selected")
+    @Size(min = 1, message = "At least one pet must be selected")
+    private List<@Valid PetServiceBookingRequest> petList;
 }

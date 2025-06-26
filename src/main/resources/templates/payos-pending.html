@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Thanh toán thành công</title>
+    <title
+      th:text="${lang == 'en'} ? 'Payment Pending' : 'Thanh toán đang chờ'"
+    >
+      Thanh toán đang chờ
+    </title>
     <style>
       * {
         margin: 0;
@@ -45,19 +49,11 @@
         }
       }
 
-      .success h1 {
-        color: #2ecc71;
+      .pending h1 {
+        color: #3498db;
         font-size: 2rem;
         margin-bottom: 20px;
         font-weight: 600;
-      }
-
-      .fail h1 {
-        color: #e74c3c;
-      }
-
-      .invalid h1 {
-        color: #f1c40f;
       }
 
       p {
@@ -109,6 +105,7 @@
         font-size: 1.1rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+        margin: 0 10px;
       }
 
       .btn:hover {
@@ -117,15 +114,59 @@
         box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
       }
 
+      .language-switcher {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+      }
+
+      .language-switcher a {
+        text-decoration: none;
+        color: #4299e1;
+        margin: 0 5px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+
+      .language-switcher a:hover {
+        background-color: #e2e8f0;
+      }
+
+      .language-switcher a.active {
+        background-color: #4299e1;
+        color: white;
+      }
+
+      /* Loading animation */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       /* Responsive Design */
       @media (max-width: 768px) {
-        /* Tablet */
         .container {
           padding: 30px;
           max-width: 600px;
         }
 
-        .success h1 {
+        .pending h1 {
           font-size: 1.8rem;
         }
 
@@ -140,17 +181,17 @@
         .btn {
           padding: 10px 24px;
           font-size: 1rem;
+          margin: 5px;
         }
       }
 
       @media (max-width: 480px) {
-        /* Mobile */
         .container {
           padding: 20px;
           margin: 10px;
         }
 
-        .success h1 {
+        .pending h1 {
           font-size: 1.5rem;
           margin-bottom: 15px;
         }
@@ -178,54 +219,85 @@
           width: 100%;
           padding: 12px;
           font-size: 0.95rem;
+          margin: 5px 0;
         }
       }
     </style>
   </head>
   <body>
-    <div class="container success">
-      <h1>🎉 Thanh toán thành công!</h1>
-      <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.</p>
-      <p><strong>Thông tin giao dịch:</strong></p>
+    <div class="language-switcher">
+      <a th:href="@{''(lang='vi')}" th:class="${lang == 'vi'} ? 'active' : ''"
+        >VN</a
+      >
+      <a th:href="@{''(lang='en')}" th:class="${lang == 'en'} ? 'active' : ''"
+        >EN</a
+      >
+    </div>
+
+    <div class="container pending">
+      <h1>
+        <span class="loading"></span>
+        <span
+          th:text="${lang == 'en'} ? 'Payment Processing' : 'Đang xử lý thanh toán'"
+          >Đang xử lý thanh toán</span
+        >
+      </h1>
+
+      <p
+        th:text="${lang == 'en'} ? 'Your payment is being processed. Please wait...' : 'Thanh toán của bạn đang được xử lý. Vui lòng chờ...'"
+      >
+        Thanh toán của bạn đang được xử lý. Vui lòng chờ...
+      </p>
+
+      <p
+        th:text="${lang == 'en'} ? 'Transaction Details:' : 'Thông tin giao dịch:'"
+      >
+        <strong>Thông tin giao dịch:</strong>
+      </p>
+
       <ul>
-        <li><strong>Số tiền:</strong> <span th:text="${amount}">0</span></li>
-        <li><strong>Đơn vị tiền thanh toán:</strong> <span>VND</span></li>
-        <li>
-          <strong>Ngân hàng:</strong> <span th:text="${bankCode}">VNPAY</span>
+        <li th:if="${id}">
+          <strong
+            th:text="${lang == 'en'} ? 'Payment Link ID:' : 'ID Link thanh toán:'"
+            >ID Link thanh toán:</strong
+          >
+          <span th:text="${id}">--</span>
+        </li>
+        <li th:if="${orderCode}">
+          <strong th:text="${lang == 'en'} ? 'Order Code:' : 'Mã đơn hàng:'"
+            >Mã đơn hàng:</strong
+          >
+          <span th:text="${orderCode}">--</span>
+        </li>
+        <li th:if="${amount}">
+          <strong th:text="${lang == 'en'} ? 'Amount:' : 'Số tiền:'"
+            >Số tiền:</strong
+          >
+          <span th:text="${amount} + ' VND'">[amount] VND</span>
         </li>
         <li>
-          <strong>Loại thẻ:</strong> <span th:text="${cardType}">ATM</span>
-        </li>
-        <li>
-          <strong>Nội dung thanh toán:</strong>
-          <span th:text="${orderInfo}">--</span>
-        </li>
-        <li>
-          <strong>Thời gian:</strong>
-          <span id="transaction-time" th:text="${payDate}">--</span>
-        </li>
-        <li>
-          <strong>Thông báo:</strong>
-          <span th:text="${message}">--</span>
+          <strong th:text="${lang == 'en'} ? 'Status:' : 'Trạng thái:'"
+            >Trạng thái:</strong
+          >
+          <span th:text="${lang == 'en'} ? 'PROCESSING' : 'ĐANG XỬ LÝ'"
+            >ĐANG XỬ LÝ</span
+          >
         </li>
       </ul>
-      <a class="btn">Quay về trang chủ</a>
+
+      <a
+        class="btn"
+        href="/"
+        th:text="${lang == 'en'} ? 'Back to Home' : 'Quay về trang chủ'"
+        >Quay về trang chủ</a
+      >
     </div>
 
     <script>
-      function formatDateTime(dateTimeStr) {
-        const year = dateTimeStr.slice(0, 4);
-        const month = dateTimeStr.slice(4, 6);
-        const day = dateTimeStr.slice(6, 8);
-        const hour = dateTimeStr.slice(8, 10);
-        const minute = dateTimeStr.slice(10, 12);
-        const second = dateTimeStr.slice(12, 14);
-        return `${day}-${month}-${year} ${hour}:${minute}:${second}`;
-      }
-
-      const timeElement = document.getElementById("transaction-time");
-      const rawTime = timeElement.textContent;
-      timeElement.textContent = formatDateTime(rawTime);
+      // Auto refresh every 5 seconds
+      setTimeout(function () {
+        location.reload();
+      }, 5000);
     </script>
   </body>
 </html>

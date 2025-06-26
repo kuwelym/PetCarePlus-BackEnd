@@ -17,7 +17,7 @@ import petitus.petcareplus.dto.response.payment.PaymentResponse;
 import petitus.petcareplus.dto.response.payment.PaymentUrlResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.PaymentService;
-import petitus.petcareplus.utils.VnpayUtils;
+import petitus.petcareplus.utils.ParamsUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -45,50 +45,11 @@ public class PaymentController {
     @Operation(summary = "VNPAY IPN URL", description = "Handle the IPN from VNPAY payment gateway")
     public ResponseEntity<Map<String, String>> vnpayIpn(HttpServletRequest request) {
 
-        Map<String, String> params = VnpayUtils.extractRawVnpParams(request.getQueryString());
+        Map<String, String> params = ParamsUtils.extractRawParams(request.getQueryString());
 
         ResponseEntity<Map<String, String>> response = paymentService.handleIPNUrl(params);
         return response;
     }
-
-    // @GetMapping("/vnpay-return")
-    // @Operation(summary = "VNPAY Return URL", description = "Handle the return
-    // from VNPAY payment gateway and redicect to the frontend")
-    // public String vnpayReturn(Model model, HttpServletRequest request) {
-
-    // org.apache.commons.logging.LogFactory.getLog(PaymentController.class)
-    // .info("Raw: " + request.getQueryString());
-
-    // Map<String, String> params =
-    // VnpayUtils.extractRawVnpParams(request.getQueryString());
-
-    // // Log the parameters for debugging
-    // org.apache.commons.logging.LogFactory.getLog(PaymentController.class)
-    // .info("VNPAY Return Parameters: " + params);
-
-    // PaymentResponse response = paymentService.processVnpayReturn(params);
-
-    // model.addAttribute("status", response.getStatus());
-    // model.addAttribute("orderCode", response.getTransactionCode());
-    // model.addAttribute("amount", response.getAmount());
-    // model.addAttribute("bankCode", response.getBankCode());
-
-    // return "payment-result";
-    // }
-
-    // Get payment by transaction code
-    // @GetMapping("/transaction/{transactionCode}")
-    // @PreAuthorize("isAuthenticated()")
-    // @Operation(summary = "Get payment by transaction code", description = "Get
-    // payment details by transaction code")
-    // public ResponseEntity<PaymentResponse> getPaymentByTransactionCode(
-    // @AuthenticationPrincipal JwtUserDetails userDetails,
-    // @PathVariable String transactionCode) {
-    // PaymentResponse payment =
-    // paymentService.getPaymentByTransactionCode(userDetails.getId(),
-    // transactionCode);
-    // return ResponseEntity.ok(payment);
-    // }
 
     @GetMapping("/booking/{bookingId}")
     @PreAuthorize("isAuthenticated()")

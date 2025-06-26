@@ -30,6 +30,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-user}
     ports:
       - "5432:5432"
+    env_file:
+      - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./var/logs/postgresql:/var/log/postgresql

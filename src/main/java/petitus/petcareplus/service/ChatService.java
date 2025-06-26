@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
@@ -84,8 +86,7 @@ public class ChatService {
 
             Map<String, String> data = createFcmNotificationData(
                     chatMessage.getId().toString(),
-                    sender.getId().toString()
-            );
+                    sender.getId().toString());
 
             for (String token : receiverTokens) {
                 firebaseMessagingService.sendNotification(token, title, body, data);
@@ -108,14 +109,37 @@ public class ChatService {
                 .map(this::convertToResponse);
     }
 
+    public List<ChatMessageResponse> getConversationWithKeyset(UUID otherUserId, LocalDateTime lastMessageTime, int limit) {
+        UUID currentUserId = userService.getCurrentUserId();
+        
+        // Create a custom pageable for keyset pagination
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        Page<ChatMessage> messagesPage;
+        if (lastMessageTime != null) {
+            // Get messages older than lastMessageTime
+            messagesPage = chatMessageRepository.findConversationBetweenUsersOlderThan(
+                currentUserId, otherUserId, lastMessageTime, pageRequest
+            );
+        } else {
+            // Get the most recent messages
+            messagesPage = chatMessageRepository.findConversationBetweenUsers(
+                currentUserId, otherUserId, pageRequest
+            );
+        }
+        
+        return messagesPage.getContent().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void markMessageAsRead(UUID otherUserId) {
         UUID currentUserId = userService.getCurrentUserId();
 
         chatMessageRepository.updateChatMessagesAsRead(
                 otherUserId,
-                currentUserId
-        );
+                currentUserId);
     }
 
     public long getUnreadMessageCount() {
@@ -127,8 +151,7 @@ public class ChatService {
         UUID currentUserId = userService.getCurrentUserId();
         List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithTimes(
                 currentUserId,
-                limit
-        );
+                limit);
 
         List<UUID> userIds = extractUserIds(conversationResults);
         return buildConversationResponses(currentUserId, userIds);
@@ -136,14 +159,12 @@ public class ChatService {
 
     public List<ConversationResponse> getAllConversationsWithKeyset(
             LocalDateTime lastMessageTime,
-            int limit
-    ) {
+            int limit) {
         UUID currentUserId = userService.getCurrentUserId();
         List<Object[]> conversationResults = chatMessageRepository.findAllConversationUsersWithKeyset(
                 currentUserId,
                 lastMessageTime,
-                limit
-        );
+                limit);
 
         List<UUID> userIds = extractUserIds(conversationResults);
         return buildConversationResponses(currentUserId, userIds);
@@ -173,8 +194,7 @@ public class ChatService {
 
                     ChatMessage lastMessage = chatMessageRepository.findLatestMessageBetweenUsers(
                             currentUserId,
-                            userId
-                    );
+                            userId);
 
                     if (lastMessage == null) {
                         log.warn("No messages found between users {} and {}", currentUserId, userId);
@@ -218,4 +238,4 @@ public class ChatService {
                 .isRead(message.getIsRead())
                 .build();
     }
-} 
+}

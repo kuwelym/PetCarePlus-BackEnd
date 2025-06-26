@@ -38,6 +38,7 @@ import petitus.petcareplus.dto.response.DetailedErrorResponse;
 import petitus.petcareplus.dto.response.ErrorResponse;
 import petitus.petcareplus.service.MessageSourceService;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +61,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .build());
     }
 
+    // @Override
+    // protected ResponseEntity<Object>
+    // handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+    // HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    // return
+    // ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
+    // .message(messageSourceService.get("malformed_json_request"))
+    // .build());
+    // }
+
     @Override
     @Nonnull
     protected ResponseEntity<Object> handleHttpMessageNotReadable(
@@ -67,8 +78,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @Nonnull HttpHeaders headers,
             @Nonnull HttpStatusCode status,
             @Nonnull WebRequest request) {
+        String errorMessage = "Malformed JSON request";
+        Throwable cause = ex.getMostSpecificCause();
+
+        if (cause instanceof com.fasterxml.jackson.core.JsonParseException) {
+            errorMessage = "Invalid JSON syntax: " + cause.getMessage();
+        } else if (cause instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException invalidFormatEx) {
+            String fieldName = invalidFormatEx.getPath().stream()
+                    .map(ref -> ref.getFieldName())
+                    .reduce((first, second) -> second) // lấy field cuối cùng
+                    .orElse("unknown");
+
+            if (invalidFormatEx.getTargetType().isEnum()) {
+                Object[] acceptedValues = invalidFormatEx.getTargetType().getEnumConstants();
+                errorMessage = "Invalid value for '" + fieldName + "'. Accepted values: "
+                        + Arrays.toString(acceptedValues);
+            } else {
+                errorMessage = "Invalid value for '" + fieldName + "'. Expected type: "
+                        + invalidFormatEx.getTargetType().getSimpleName();
+            }
+        } else if (cause instanceof com.fasterxml.jackson.databind.exc.MismatchedInputException mismatchedInputEx) {
+            errorMessage = "Invalid or missing value in request body: " + mismatchedInputEx.getOriginalMessage();
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.builder()
-                .message(messageSourceService.get("malformed_json_request"))
+                .message(errorMessage)
                 .build());
     }
 
@@ -88,6 +121,34 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(DetailedErrorResponse.builder()
                 .message(messageSourceService.get("validation_error"))
+                .items(errors)
+                .build());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        Map<String, String> errors = new HashMap<>();
+        String paramName = ex.getName();
+        String invalidValue = ex.getValue() != null ? ex.getValue().toString() : "null";
+
+        // Handle enum-specific type mismatch
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            String enumName = ex.getRequiredType().getSimpleName();
+            String acceptedValues = Arrays.toString(ex.getRequiredType().getEnumConstants());
+            String message = String.format("Invalid value '%s' for %s. Accepted values: %s",
+                    invalidValue, enumName, acceptedValues);
+            errors.put(paramName, message);
+        } else {
+            // Handle other type mismatches
+            String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+            String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
+                    invalidValue, paramName, expectedType);
+            errors.put(paramName, message);
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(DetailedErrorResponse.builder()
+                .message(messageSourceService.get("invalid_parameter"))
                 .items(errors)
                 .build());
     }
@@ -114,7 +175,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({
             BadRequestException.class,
             MultipartException.class,
-            MethodArgumentTypeMismatchException.class,
             IllegalArgumentException.class,
             InvalidDataAccessApiUsageException.class,
             ConstraintViolationException.class,
@@ -151,6 +211,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public final ResponseEntity<ErrorResponse> handleAccessDeniedException(final Exception e) {
         return build(HttpStatus.FORBIDDEN, messageSourceService.get("access_denied"));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler({

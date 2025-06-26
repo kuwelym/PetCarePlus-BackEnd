@@ -60,8 +60,6 @@ public class PaymentService {
                 .paymentMethod(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
                 .paymentDescription(request.getDescription())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
         Payment savedPayment = paymentRepository.save(payment);
@@ -83,7 +81,7 @@ public class PaymentService {
         // String bankCode = req.getParameter("bankCode");
 
         String vnp_TxnRef = generateTransactionCode();
-        payment.setTransactionCode(vnp_TxnRef);
+        payment.setOrderCode(vnp_TxnRef);
         paymentRepository.save(payment);
 
         String vnp_IpAddr = "127.0.0.1";
@@ -154,9 +152,6 @@ public class PaymentService {
     }
 
     public static String hmacSHA512(final String key, final String data) {
-
-        log.info("--key: {}", key);
-        log.info("--data: {}", data);
 
         try {
 
@@ -315,12 +310,18 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
         }
 
-        payment.setBankCode(params.get("vnp_BankCode"));
-        payment.setCardType(params.get("vnp_CardType"));
+        payment.setVnpayData(vnp_TxnRef, params.get("vnp_BankCode"), params.get("vnp_CardType"));
         payment.setPaymentDate(LocalDateTime.now());
         payment.setPaymentDescription(params.get("vnp_OrderInfo"));
 
         paymentRepository.save(payment);
+
+        // Update payment status of booking if payment is successful
+        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+            Booking booking = payment.getBooking();
+            booking.setPaymentStatus(PaymentStatus.COMPLETED);
+            bookingRepository.save(booking);
+        }
 
         response.put("RspCode", "00");
         response.put("Message", "Confirm Success");
@@ -353,10 +354,12 @@ public class PaymentService {
                 .amount(payment.getAmount())
                 .paymentMethod(payment.getPaymentMethod())
                 .status(payment.getStatus())
-                .transactionCode(payment.getTransactionCode())
-                .bankCode(payment.getBankCode())
+                .gatewayData(payment.getGatewayData())
+                .orderCode(payment.getOrderCode())
                 .paymentDate(payment.getPaymentDate())
                 .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
                 .build();
     }
+
 }

@@ -19,6 +19,8 @@ public class BookingResponse {
     private UUID userId;
     private String userName;
     private String userAvatar;
+    private UUID providerServiceId;
+    private String serviceName;
     private UUID providerId;
     private String providerName;
     private String providerAvatar;

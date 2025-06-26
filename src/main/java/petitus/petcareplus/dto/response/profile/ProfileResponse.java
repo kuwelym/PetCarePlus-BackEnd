@@ -24,6 +24,12 @@ public class ProfileResponse extends ResponseObject {
 
     private boolean isServiceProvider;
 
+    private String avatarUrl;
+
+    private String location;
+
+    private String about;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -31,6 +37,10 @@ public class ProfileResponse extends ResponseObject {
     private LocalDateTime deletedAt;
 
     public static ProfileResponse convert(Profile profile) {
+        if (profile == null) {
+            return null;
+        }
+        
         if (profile.isServiceProvider())
             return ServiceProviderProfileResponse.convert(profile.getServiceProviderProfile());
         ProfileResponse.ProfileResponseBuilder<?, ?> builder = ProfileResponse.builder()
@@ -38,6 +48,9 @@ public class ProfileResponse extends ResponseObject {
                 .user(UserResponse.convert(profile.getUser()))
                 .dob(profile.getDob())
                 .gender(profile.getGender())
+                .avatarUrl(profile.getAvatarUrl())
+                .location(profile.getLocation())
+                .about(profile.getAbout())
                 .isServiceProvider(profile.isServiceProvider())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
