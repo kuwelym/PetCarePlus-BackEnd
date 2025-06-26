@@ -6,10 +6,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import petitus.petcareplus.dto.request.auth.CreateAdminRequest;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.model.Role;
@@ -17,6 +19,7 @@ import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.utils.Constants;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -46,13 +49,17 @@ public class AdminService {
     }
 
     @Transactional
-    public User createAdmin(CreateAdminRequest request) {
+    public User createAdmin(CreateAdminRequest request) throws BindException {
         // Check if email already exists
         BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
+
         userRepository.findByEmail(request.getEmail())
                 .ifPresent(user -> bindingResult.addError(new FieldError(bindingResult.getObjectName(), "email",
                         messageSourceService.get("unique_email"))));
 
+        if (bindingResult.hasErrors()) {
+            throw new BindException(bindingResult);
+        }
         // Create new admin user
         Role adminRole = roleService.findByName(Constants.RoleEnum.ADMIN);
 

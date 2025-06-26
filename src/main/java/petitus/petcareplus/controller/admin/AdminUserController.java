@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.controller.BaseController;
 import petitus.petcareplus.dto.request.auth.ChangeUserRoleRequest;
-import petitus.petcareplus.dto.request.auth.CreateAdminRequest;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
 import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.user.UserResponse;
@@ -35,7 +34,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/users")
-@Tag(name = "Admin", description = "APIs for Admin managing user profiles, preferences and settings")
+@Tag(name = "Admin", description = "APIs for Admin")
 public class AdminUserController extends BaseController {
         private final String[] SORT_COLUMNS = new String[] { "id", "email", "name", "lastName", "blockedAt",
                         "createdAt", "updatedAt", "deletedAt" };
@@ -117,14 +116,6 @@ public class AdminUserController extends BaseController {
 
                 User updatedUser = adminService.changeUserRole(id, request.getRole());
                 return ResponseEntity.ok(UserResponse.convert(updatedUser));
-        }
-
-        @PostMapping("/create-admin")
-        @Operation(summary = "Create new admin", description = "API để admin tạo admin mới")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<UserResponse> createAdmin(@RequestBody @Valid final CreateAdminRequest request) {
-                User newAdmin = adminService.createAdmin(request);
-                return ResponseEntity.ok(UserResponse.convert(newAdmin));
         }
 
         @PutMapping("/{id}/block")
