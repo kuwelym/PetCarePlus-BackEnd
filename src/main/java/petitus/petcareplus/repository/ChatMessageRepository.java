@@ -32,6 +32,25 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
           );
 
     @Query(value = """
+            SELECT m FROM ChatMessage m
+            WHERE ((m.senderId = :userId1 AND m.recipientId = :userId2)
+               OR (m.senderId = :userId2 AND m.recipientId = :userId1))
+               AND m.createdAt < :lastMessageTime
+            ORDER BY m.createdAt DESC
+            """, countQuery = """
+        SELECT COUNT(m) FROM ChatMessage m
+        WHERE ((m.senderId = :userId1 AND m.recipientId = :userId2)
+           OR (m.senderId = :userId2 AND m.recipientId = :userId1))
+           AND m.createdAt < :lastMessageTime
+        """)
+    Page<ChatMessage> findConversationBetweenUsersOlderThan(
+        @Param("userId1") UUID userId1,
+        @Param("userId2") UUID userId2,
+        @Param("lastMessageTime") LocalDateTime lastMessageTime,
+        Pageable pageable
+    );
+
+    @Query(value = """
         SELECT COUNT(m) FROM ChatMessage m
         WHERE m.recipientId = :userId AND m.isRead = false
         """, nativeQuery = true)
