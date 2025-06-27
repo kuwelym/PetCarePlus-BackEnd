@@ -39,9 +39,9 @@ public class ChatService {
     }
 
     @Transactional
-    public void sendMessage(ChatMessageRequest request, Principal principal) {
+    public ChatMessageResponse sendMessage(ChatMessageRequest request, Principal principal) {
         UUID senderId = UUID.fromString(principal.getName());
-        sendMessageInternal(request, senderId);
+        return sendMessageInternal(request, senderId);
     }
 
     private ChatMessageResponse sendMessageInternal(ChatMessageRequest request, UUID senderId) {
