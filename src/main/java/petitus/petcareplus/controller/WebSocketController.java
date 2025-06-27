@@ -1,21 +1,26 @@
 package petitus.petcareplus.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
+import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
 import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
 import petitus.petcareplus.dto.request.chat.ReadReceiptRequest;
 import petitus.petcareplus.dto.request.chat.TypingEvent;
+import petitus.petcareplus.dto.request.chat.UserPresenceRequest;
 import petitus.petcareplus.service.ChatService;
 import petitus.petcareplus.service.WebSocketService;
 
 import java.security.Principal;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class WebSocketController {
 
     private final WebSocketService webSocketService;
@@ -28,9 +33,9 @@ public class WebSocketController {
     ) {
         chatMessageRequest.setSenderId(UUID.fromString(principal.getName()));
         
-        chatService.sendMessage(chatMessageRequest, principal);
+        ChatMessageResponse response = chatService.sendMessage(chatMessageRequest, principal);
 
-        webSocketService.sendMessage(chatMessageRequest);
+        webSocketService.sendMessage(response);
     }
 
     @MessageMapping("/chat.typing")
@@ -54,7 +59,33 @@ public class WebSocketController {
             webSocketService.handleMarkAsRead(readReceiptRequest,
                 UUID.fromString(principal.getName()));
         } catch (Exception e) {
-            System.err.println("Error processing mark as read request: " + e.getMessage());
+            log.error("Error processing mark as read request", e);
+        }
+    }
+    
+    @MessageMapping("/user.presence")
+    public void handleUserPresence(
+            @Payload UserPresenceRequest presenceRequest,
+            Principal principal
+    ) {
+        try {
+            UUID userId = UUID.fromString(principal.getName());
+            webSocketService.handleUserPresence(userId, presenceRequest.isOnline());
+        } catch (Exception e) {
+            log.error("Error processing user presence", e);
+        }
+    }
+    
+    @MessageMapping("/heartbeat")
+    public void handleHeartbeat(
+            @Payload Map<String, Object> heartbeat,
+            Principal principal
+    ) {
+        try {
+            UUID userId = UUID.fromString(principal.getName());
+            webSocketService.handleHeartbeat(userId);
+        } catch (Exception e) {
+            log.error("Error processing heartbeat", e);
         }
     }
 } 
