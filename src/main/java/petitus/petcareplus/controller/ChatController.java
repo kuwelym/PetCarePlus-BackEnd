@@ -75,15 +75,6 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getAllConversationsWithKeyset(lastMessageTime, limit));
     }
 
-    @PutMapping("/messages/{otherUserId}/read")
-    @Operation(summary = "Mark message as read", description = "Mark a specific message as read", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<Void> markMessageAsRead(
-            @Parameter(description = "Other user ID to mark the chat section as read") @PathVariable UUID otherUserId) {
-
-        chatService.markMessageAsRead(otherUserId);
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping("/unread/count")
     @Operation(summary = "Get unread message count", description = "Get the count of unread messages", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Long> getUnreadMessageCount() {

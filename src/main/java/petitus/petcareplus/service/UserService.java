@@ -31,6 +31,7 @@ import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -182,13 +183,27 @@ public class UserService implements UserDetailsService {
 
     public UUID getCurrentUserId(){
         Authentication authentication = getAuthentication();
-        if (authentication.isAuthenticated()) {
+        if (authentication != null && authentication.isAuthenticated()) {
             try {
                 return ((JwtUserDetails) authentication.getPrincipal()).getId();
             } catch (ClassCastException | ResourceNotFoundException e) {
                 throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
             }
         } else {
+            throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
+        }
+    }
+
+    /**
+     * Get user ID from Principal (useful for WebSocket context)
+     */
+    public UUID getUserIdFromPrincipal(Principal principal) {
+        if (principal == null) {
+            throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
+        }
+        try {
+            return UUID.fromString(principal.getName());
+        } catch (IllegalArgumentException e) {
             throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
         }
     }
