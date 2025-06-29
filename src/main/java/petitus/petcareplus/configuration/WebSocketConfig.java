@@ -33,4 +33,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic", "/queue");
     }
+    
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        // Configure message size limits for image uploads
+        registration.setMessageSizeLimit(8 * 1024 * 1024); // 8MB
+        registration.setSendBufferSizeLimit(8 * 1024 * 1024); // 8MB
+        registration.setSendTimeLimit(20 * 1000); // 20 seconds
+    }
 }
