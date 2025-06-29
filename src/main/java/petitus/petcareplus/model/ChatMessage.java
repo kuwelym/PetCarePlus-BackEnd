@@ -39,6 +39,12 @@ public class ChatMessage extends AbstractBaseEntity {
     @Builder.Default
     private Boolean isRead = false;
 
+    // Upload status for tracking message processing (mainly for images, but required for all messages)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UploadStatus uploadStatus = UploadStatus.COMPLETED; // Text messages are immediately completed
+
     // Virtual method to get message type (can be overridden by subclasses)
     public MessageType getMessageType() {
         return MessageType.TEXT;

@@ -19,7 +19,6 @@ import petitus.petcareplus.service.CloudinaryService;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -129,85 +128,42 @@ public class WebSocketController {
                 return;
             }
 
-            // Decode base64 image data
-            byte[] imageBytes = decodeBase64ImageData(imageDataBase64, senderId);
-            if (imageBytes == null) {
-                return; // Error already handled in the method
-            }
-            
-            // Double-check actual decoded size
-            if (imageBytes.length > maxSizeBytes) {
-                webSocketService.sendImageUploadError(senderId, 
-                    String.format("Image too large. Maximum size is %dMB, but received %.1fMB", 
-                        maxSizeMB, imageBytes.length / (1024.0 * 1024.0)));
-                return;
-            }
-            
-            // Upload to Cloudinary
-            Map<String, Object> uploadResult = cloudinaryService.uploadImage(imageBytes, "chat-images");
-            
-            // Create response with all image information
-            ImageUploadResponse response = ImageUploadResponse.builder()
+            // Step 1: Create immediate response with PENDING status for optimistic UI
+            ImageUploadResponse pendingResponse = ImageUploadResponse.builder()
                     .senderId(senderId)
                     .recipientId(imageUploadRequest.getRecipientId())
-                    .imageUrl((String) uploadResult.get("secure_url"))
-                    .publicId((String) uploadResult.get("public_id"))
+                    .imageUrl("pending") // Temporary placeholder
+                    .publicId("pending") // Temporary placeholder
                     .imageName(imageUploadRequest.getImageName() != null ? imageUploadRequest.getImageName() : "image")
                     .mimeType(imageUploadRequest.getMimeType() != null ? imageUploadRequest.getMimeType() : "image/jpeg")
                     .caption(imageUploadRequest.getCaption())
-                    .fileSize(((Number) uploadResult.get("bytes")).longValue())
-                    .width((Integer) uploadResult.get("width"))
-                    .height((Integer) uploadResult.get("height"))
+                    .fileSize(estimatedSizeBytes) // Estimated size
+                    .width(0) // Will be updated after upload
+                    .height(0) // Will be updated after upload
                     .uploadedAt(java.time.LocalDateTime.now())
                     .isRead(false)
+                    .uploadStatus(petitus.petcareplus.model.UploadStatus.PENDING)
                     .build();
-            
-            // Generate different sized URLs
-            String publicId = (String) uploadResult.get("public_id");
-            response.setThumbnailUrl(cloudinaryService.generateOptimizedUrl(publicId, 150, 150));
-            response.setMediumUrl(cloudinaryService.generateOptimizedUrl(publicId, 400, 400));
-            response.setLargeUrl(cloudinaryService.generateOptimizedUrl(publicId, 800, 800));
-            
-            // Save image message to database
-            ChatMessageResponse savedMessage = chatService.saveImageMessage(response, senderId);
-            
-            // Update response with database ID
-            response.setId(savedMessage.getId());
-            
-            // Send image message to recipient
-            webSocketService.sendImageMessage(response);
-            
-            log.info("Image uploaded successfully from {} to {}, URL: {}, Size: {}KB", 
-                    senderId, imageUploadRequest.getRecipientId(), response.getImageUrl(), 
-                    imageBytes.length / 1024);
 
-        } catch (IOException e) {
-            log.error("Error uploading image to Cloudinary", e);
-            webSocketService.sendImageUploadError(UUID.fromString(principal.getName()), 
-                    "Failed to upload image to cloud storage: " + e.getMessage());
+            // Step 2: Save pending message to database immediately
+            ChatMessageResponse savedMessage = chatService.savePendingImageMessage(pendingResponse, senderId);
+            pendingResponse.setId(savedMessage.getId());
+
+            // Step 3: Send pending message to users immediately (optimistic UI)
+            webSocketService.sendImageMessage(pendingResponse);
+            
+            log.info("Pending image message sent immediately to users. Starting background upload...");
+
+            // Step 4: Process upload asynchronously
+            chatService.processImageUploadAsync(imageDataBase64, pendingResponse, savedMessage.getId());
+
         } catch (Exception e) {
             log.error("Error processing image upload", e);
             webSocketService.sendImageUploadError(UUID.fromString(principal.getName()), 
                     "Unexpected error occurred while uploading image");
         }
     }
-    
-    /**
-     * Decode Base64 image data with error handling
-     * 
-     * @param imageDataBase64 The Base64 encoded image data
-     * @param senderId The sender's UUID for error reporting
-     * @return Decoded image bytes, or null if decoding failed
-     */
-    private byte[] decodeBase64ImageData(String imageDataBase64, UUID senderId) {
-        try {
-            return Base64.getDecoder().decode(imageDataBase64);
-        } catch (IllegalArgumentException e) {
-            webSocketService.sendImageUploadError(senderId, "Invalid image data format");
-            return null;
-        }
-    }
-    
+
     /**
      * Handle image deletion through WebSocket
      */

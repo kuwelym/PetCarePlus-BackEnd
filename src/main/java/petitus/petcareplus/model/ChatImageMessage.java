@@ -38,13 +38,12 @@ public class ChatImageMessage extends ChatMessage {
     @Override
     public String getDisplayContent() {
         if (caption != null && !caption.trim().isEmpty()) {
-            return "📷 " + caption; // Image with caption
+            return caption;
         } else {
-            return "📷 Image"; // Image without caption
+            return "Sent an image";
         }
     }
 
-    // Override getContent() to return caption or default for compatibility
     @Override
     public String getContent() {
         if (caption != null && !caption.trim().isEmpty()) {
@@ -52,4 +51,5 @@ public class ChatImageMessage extends ChatMessage {
         }
         return "📷 Image"; // Default content for database NOT NULL constraint
     }
-} 
+
+}

@@ -2,6 +2,8 @@ package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import petitus.petcareplus.dto.request.chat.ReadReceiptRequest;
@@ -9,6 +11,8 @@ import petitus.petcareplus.dto.request.chat.TypingEvent;
 import petitus.petcareplus.dto.request.chat.UserPresenceRequest;
 import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
 import petitus.petcareplus.dto.response.chat.ConversationResponse;
+import petitus.petcareplus.event.ImageUploadCompletedEvent;
+import petitus.petcareplus.event.ImageUploadErrorEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +26,7 @@ public class WebSocketService {
     private static final String USER_DESTINATION_PREFIX = "/user/";
     
     private final SimpMessagingTemplate messagingTemplate;
+    @Lazy
     private final ChatService chatService;
     
     // Track online users
@@ -177,5 +182,35 @@ public class WebSocketService {
         } catch (Exception e) {
             log.error("Error sending image deletion notification: {}", e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Send image upload completion notification to users
+     */
+    public void sendImageUploadCompleted(petitus.petcareplus.dto.response.chat.ImageUploadResponse imageUploadResponse) {
+        try {
+            // Send completed message to recipient
+            String recipientDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getRecipientId() + "/queue/image-upload-completed";
+            messagingTemplate.convertAndSend(recipientDestination, imageUploadResponse);
+            
+            // Send completion confirmation to sender
+            String senderDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getSenderId() + "/queue/image-upload-completed";
+            messagingTemplate.convertAndSend(senderDestination, imageUploadResponse);
+            
+            log.info("Image upload completion notification sent for message ID: {}", imageUploadResponse.getId());
+            
+        } catch (Exception e) {
+            log.error("Error sending image upload completion notification: {}", e.getMessage(), e);
+        }
+    }
+
+    @EventListener
+    public void handleImageUploadCompleted(ImageUploadCompletedEvent event) {
+        sendImageUploadCompleted(event.getImageUploadResponse());
+    }
+
+    @EventListener
+    public void handleImageUploadError(ImageUploadErrorEvent event) {
+        sendImageUploadError(event.getUserId(), event.getErrorMessage());
     }
 } 
