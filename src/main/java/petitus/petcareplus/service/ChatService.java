@@ -11,10 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.chat.ChatMessageRequest;
 import petitus.petcareplus.dto.request.notification.NotificationRequest;
 import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
+import petitus.petcareplus.dto.response.chat.ImageUploadResponse;
 import petitus.petcareplus.dto.response.chat.ConversationResponse;
 import petitus.petcareplus.model.ChatMessage;
+import petitus.petcareplus.model.ChatImageMessage;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.ChatMessageRepository;
+import petitus.petcareplus.repository.ChatImageMessageRepository;
 import petitus.petcareplus.utils.enums.Notifications;
 
 import java.security.Principal;
@@ -27,6 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatImageMessageRepository chatImageMessageRepository;
     private final UserService userService;
     private final NotificationService notificationService;
     private final FcmTokenService fcmTokenService;
@@ -56,11 +60,80 @@ public class ChatService {
         return convertToResponse(chatMessage);
     }
 
+    @Transactional
+    public ChatMessageResponse saveImageMessage(ImageUploadResponse imageUploadResponse, UUID senderId) {
+        User sender = userService.findById(senderId);
+
+        ChatImageMessage chatImageMessage = new ChatImageMessage();
+        chatImageMessage.setSenderId(senderId);
+        chatImageMessage.setRecipientId(imageUploadResponse.getRecipientId());
+        chatImageMessage.setCaption(imageUploadResponse.getCaption());
+        
+        // Ensure content is never null for database compatibility
+        String content = (imageUploadResponse.getCaption() != null && !imageUploadResponse.getCaption().trim().isEmpty()) 
+                ? imageUploadResponse.getCaption() 
+                : "Image";
+        chatImageMessage.setContent(content);
+        
+        chatImageMessage.setImageUrl(imageUploadResponse.getImageUrl());
+        chatImageMessage.setPublicId(imageUploadResponse.getPublicId());
+        chatImageMessage.setImageName(imageUploadResponse.getImageName());
+        chatImageMessage.setMimeType(imageUploadResponse.getMimeType());
+        chatImageMessage.setFileSize(imageUploadResponse.getFileSize());
+        chatImageMessage.setWidth(imageUploadResponse.getWidth());
+        chatImageMessage.setHeight(imageUploadResponse.getHeight());
+        chatImageMessage.setThumbnailUrl(imageUploadResponse.getThumbnailUrl());
+        chatImageMessage.setMediumUrl(imageUploadResponse.getMediumUrl());
+        chatImageMessage.setLargeUrl(imageUploadResponse.getLargeUrl());
+        chatImageMessage.setIsRead(false);
+
+        ChatMessage chatMessage = chatImageMessageRepository.save(chatImageMessage);
+
+        // Create notification for image message
+        NotificationRequest notificationRequest = NotificationRequest.builder()
+                .userIdReceive(chatMessage.getRecipientId())
+                .type(Notifications.CHAT)
+                .title("New Image Message")
+                .message(sender.getFullName() + " sent you an image")
+                .relatedId(chatMessage.getId())
+                .build();
+
+        notificationService.pushNotification(notificationRequest, senderId);
+
+        // Send FCM notification for image message
+        sendImageFcmNotification(chatMessage, sender);
+
+        return convertToResponse(chatMessage);
+    }
+
+    private void sendImageFcmNotification(ChatMessage chatMessage, User sender) {
+        List<String> receiverTokens = fcmTokenService.getUserTokens(chatMessage.getRecipientId());
+        if (!receiverTokens.isEmpty()) {
+            String title = "New image from " + sender.getFullName();
+            String body = chatMessage.getContent() != null ? chatMessage.getContent() : "Image";
+
+            Map<String, String> data = createFcmNotificationData(
+                    chatMessage.getId().toString(),
+                    sender.getId().toString());
+            data.put("messageType", "IMAGE");
+            
+            // Cast to ChatImageMessage to access image-specific fields
+            if (chatMessage instanceof ChatImageMessage imageMessage) {
+                data.put("imageUrl", imageMessage.getImageUrl());
+            }
+
+            for (String token : receiverTokens) {
+                firebaseMessagingService.sendNotification(token, title, body, data);
+            }
+        }
+    }
+
     private ChatMessage createAndSaveChatMessage(ChatMessageRequest request, UUID senderId) {
         ChatMessage chatMessage = ChatMessage.builder()
                 .senderId(senderId)
                 .recipientId(request.getRecipientId())
                 .content(request.getContent())
+                .isRead(false)
                 .build();
 
         return chatMessageRepository.save(chatMessage);
@@ -210,11 +283,14 @@ public class ChatService {
                         avatarUrl = user.getProfile().getAvatarUrl();
                     }
 
+                    // Format last message based on type
+                    String displayMessage = lastMessage.getDisplayContent();
+                    
                     return ConversationResponse.builder()
                             .userId(userId)
                             .userName(user.getFullName())
                             .userAvatarUrl(avatarUrl)
-                            .lastMessage(lastMessage.getContent())
+                            .lastMessage(displayMessage)
                             .lastMessageTime(lastMessage.getCreatedAt())
                             .lastMessageSenderId(lastMessage.getSenderId())
                             .hasUnreadMessages(unreadCount > 0)
@@ -226,14 +302,32 @@ public class ChatService {
     }
 
     private ChatMessageResponse convertToResponse(ChatMessage message) {
-        return ChatMessageResponse.builder()
+        ChatMessageResponse.ChatMessageResponseBuilder builder = ChatMessageResponse.builder()
                 .id(message.getId())
                 .senderId(message.getSenderId())
                 .recipientId(message.getRecipientId())
+                .messageType(message.getMessageType())
                 .content(message.getContent())
                 .sentAt(message.getCreatedAt())
                 .readAt(message.getReadAt())
-                .isRead(message.getIsRead())
-                .build();
+                .isRead(message.getIsRead());
+
+        // If it's an image message, add image-specific fields
+        if (message instanceof ChatImageMessage imageMessage) {
+            builder.imageUrl(imageMessage.getImageUrl())
+                    .publicId(imageMessage.getPublicId())
+                    .imageName(imageMessage.getImageName())
+                    .mimeType(imageMessage.getMimeType())
+                    .fileSize(imageMessage.getFileSize())
+                    .width(imageMessage.getWidth())
+                    .height(imageMessage.getHeight())
+                    .thumbnailUrl(imageMessage.getThumbnailUrl())
+                    .mediumUrl(imageMessage.getMediumUrl())
+                    .largeUrl(imageMessage.getLargeUrl());
+        }
+
+        return builder.build();
     }
+
+
 }

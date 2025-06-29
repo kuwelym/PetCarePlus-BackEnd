@@ -1,6 +1,7 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import petitus.petcareplus.dto.request.chat.ReadReceiptRequest;
@@ -10,21 +11,23 @@ import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
 import petitus.petcareplus.dto.response.chat.ConversationResponse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WebSocketService {
 
+    private static final String USER_DESTINATION_PREFIX = "/user/";
+    
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
     
     // Track online users
-    private final ConcurrentHashMap<String, Boolean> onlineUsers = new ConcurrentHashMap<>();
 
     public void sendMessage(ChatMessageResponse chatMessageResponse) {
-        String messageDestination = "/user/" + chatMessageResponse.getRecipientId() + "/queue/messages";
+        String messageDestination = USER_DESTINATION_PREFIX + chatMessageResponse.getRecipientId() + "/queue/messages";
         messagingTemplate.convertAndSend(messageDestination, chatMessageResponse);
         
         // Send the specific message to both users instead of full conversation updates
@@ -35,10 +38,10 @@ public class WebSocketService {
     public void sendMessageUpdate(UUID userId, ChatMessageResponse message) {
         try {
             // Send the specific message data via WebSocket
-            String destination = "/user/" + userId.toString() + "/queue/message-update";
+            String destination = USER_DESTINATION_PREFIX + userId.toString() + "/queue/message-update";
             messagingTemplate.convertAndSend(destination, message);
         } catch (Exception e) {
-            System.err.println("Error sending message update: " + e.getMessage());
+            log.error("Error sending message update: {}", e.getMessage(), e);
         }
     }
     
@@ -48,11 +51,11 @@ public class WebSocketService {
             List<ConversationResponse> conversations = chatService.getAllConversations(20);
             
             // Send the actual conversation data via WebSocket
-            String destination = "/user/" + userId.toString() + "/queue/conversation-update";
+            String destination = USER_DESTINATION_PREFIX + userId.toString() + "/queue/conversation-update";
             messagingTemplate.convertAndSend(destination, conversations);
         } catch (Exception e) {
             // Fallback to simple refresh signal if there's an error
-            String destination = "/user/" + userId.toString() + "/queue/conversation-update";
+            String destination = USER_DESTINATION_PREFIX + userId.toString() + "/queue/conversation-update";
             messagingTemplate.convertAndSend(destination, "refresh");
         }
     }
@@ -82,12 +85,12 @@ public class WebSocketService {
             sendUpdatedConversations(otherUserId);
             
         } catch (Exception e) {
-            System.err.println("Error handling mark as read: " + e.getMessage());
+            log.error("Error handling mark as read: {}", e.getMessage(), e);
         }
     }
 
     public void sendReadReceipt(UUID userId, ReadReceiptRequest readReceiptRequest) {
-        String readReceiptDestination = "/user/" + userId + "/queue/read-receipt";
+        String readReceiptDestination = USER_DESTINATION_PREFIX + userId + "/queue/read-receipt";
         messagingTemplate.convertAndSend(readReceiptDestination, readReceiptRequest);
     }
     
@@ -95,19 +98,17 @@ public class WebSocketService {
         try {
             String userIdStr = userId.toString();
             
-            // Update user online status
-            onlineUsers.put(userIdStr, isOnline);
-            
+
             // Create presence update message
             UserPresenceRequest presenceUpdate = new UserPresenceRequest(userIdStr, isOnline);
             
             // Broadcast to all users via topic
             messagingTemplate.convertAndSend("/topic/user-status", presenceUpdate);
             
-            System.out.println("User " + userIdStr + " is now " + (isOnline ? "online" : "offline"));
+            log.info("User {} is now {}", userIdStr, isOnline ? "online" : "offline");
             
         } catch (Exception e) {
-            System.err.println("Error handling user presence: " + e.getMessage());
+            log.error("Error handling user presence: {}", e.getMessage(), e);
         }
     }
     
@@ -115,13 +116,66 @@ public class WebSocketService {
         // Keep user online and update their presence
         handleUserPresence(userId, true);
     }
-    
-    public boolean isUserOnline(String userId) {
-        return onlineUsers.getOrDefault(userId, false);
+
+    /**
+     * Send image message to recipient
+     */
+    public void sendImageMessage(petitus.petcareplus.dto.response.chat.ImageUploadResponse imageUploadResponse) {
+        try {
+            // Send to recipient
+            String recipientDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getRecipientId() + "/queue/image-messages";
+            messagingTemplate.convertAndSend(recipientDestination, imageUploadResponse);
+            
+            // Send confirmation to sender
+            String senderDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getSenderId() + "/queue/image-message-confirm";
+            messagingTemplate.convertAndSend(senderDestination, imageUploadResponse);
+            
+            log.info("Image message sent from {} to {}", imageUploadResponse.getSenderId(), imageUploadResponse.getRecipientId());
+                             
+        } catch (Exception e) {
+            log.error("Error sending image message: {}", e.getMessage(), e);
+        }
     }
     
-    public void removeUser(UUID userId) {
-        handleUserPresence(userId, false);
-        onlineUsers.remove(userId.toString());
+    /**
+     * Send image upload error to user
+     */
+    public void sendImageUploadError(UUID userId, String errorMessage) {
+        try {
+            Map<String, Object> errorResponse = Map.of(
+                "error", "Image upload failed",
+                "message", errorMessage,
+                "timestamp", System.currentTimeMillis()
+            );
+            
+            String destination = USER_DESTINATION_PREFIX + userId + "/queue/image-upload-error";
+            messagingTemplate.convertAndSend(destination, errorResponse);
+            
+            log.info("Image upload error sent to user: {}", userId);
+            
+        } catch (Exception e) {
+            log.error("Error sending image upload error: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Notify about image deletion
+     */
+    public void notifyImageDeleted(String messageId, UUID userId) {
+        try {
+            Map<String, Object> deleteNotification = Map.of(
+                "messageId", messageId,
+                "deletedBy", userId.toString(),
+                "deletedAt", System.currentTimeMillis()
+            );
+            
+            String destination = USER_DESTINATION_PREFIX + userId + "/queue/image-deleted";
+            messagingTemplate.convertAndSend(destination, deleteNotification);
+            
+            log.info("Image deletion notification sent for message: {}", messageId);
+            
+        } catch (Exception e) {
+            log.error("Error sending image deletion notification: {}", e.getMessage(), e);
+        }
     }
 } 
