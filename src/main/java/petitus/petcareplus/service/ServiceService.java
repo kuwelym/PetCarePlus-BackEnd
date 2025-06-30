@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import petitus.petcareplus.dto.request.service.ServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ServiceRequest;
+import petitus.petcareplus.dto.response.service.AdminServiceResponse;
 import petitus.petcareplus.dto.response.service.ServiceResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
@@ -40,17 +41,20 @@ public class ServiceService {
     public Page<ServiceResponse> getAllServices(PaginationCriteria pagination) {
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
         Page<DefaultService> services = serviceRepository.findAll(pageRequest);
+
         return services.map(this::mapToServiceResponse);
     }
 
     public ServiceResponse getServiceById(UUID id) {
         DefaultService service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        // Check if the current user is an admin to return full details
+
         return mapToServiceResponse(service);
     }
 
     @Transactional
-    public ServiceResponse createService(ServiceRequest request) {
+    public AdminServiceResponse createService(ServiceRequest request) {
         // Check if service name already exists
         if (serviceRepository.findByName(request.getName()).isPresent()) {
             throw new BadRequestException("Service name already exists");
@@ -64,11 +68,12 @@ public class ServiceService {
                 .build();
 
         DefaultService savedService = serviceRepository.save(service);
-        return mapToServiceResponse(savedService);
+
+        return mapToAdminServiceResponse(savedService);
     }
 
     @Transactional
-    public ServiceResponse updateService(UUID id, ServicePatchRequest request) {
+    public AdminServiceResponse updateService(UUID id, ServicePatchRequest request) {
         DefaultService service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
@@ -96,7 +101,8 @@ public class ServiceService {
         }
 
         DefaultService updatedService = serviceRepository.save(service);
-        return mapToServiceResponse(updatedService);
+
+        return mapToAdminServiceResponse(updatedService);
     }
 
     @Transactional
@@ -121,17 +127,23 @@ public class ServiceService {
         return services.map(this::mapToServiceResponse);
     }
 
-    public Page<ServiceResponse> searchServices(String query, PaginationCriteria pagination) {
-        Specification<DefaultService> specification = ServiceFilterSpecification.nameContains(query);
+    public Page<AdminServiceResponse> getAllServicesForAdmin(PaginationCriteria pagination) {
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
-        Page<DefaultService> services = serviceRepository.findAll(specification, pageRequest);
-        return services.map(this::mapToServiceResponse);
+        Page<DefaultService> services = serviceRepository.findAll(pageRequest);
+        return services.map(this::mapToAdminServiceResponse);
     }
 
-    public List<ServiceResponse> searchServices(String query) {
-        return serviceRepository.findByNameContainingIgnoreCase(query).stream()
-                .map(this::mapToServiceResponse)
-                .collect(Collectors.toList());
+    public AdminServiceResponse getServiceByIdForAdmin(UUID id) {
+        DefaultService service = serviceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        return mapToAdminServiceResponse(service);
+    }
+
+    public Page<AdminServiceResponse> searchServicesForAdmin(ServiceCriteria criteria, PaginationCriteria pagination) {
+        Specification<DefaultService> specification = new ServiceFilterSpecification(criteria);
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<DefaultService> services = serviceRepository.findAll(specification, pageRequest);
+        return services.map(this::mapToAdminServiceResponse);
     }
 
     private ServiceResponse mapToServiceResponse(DefaultService service) {
@@ -141,6 +153,19 @@ public class ServiceService {
                 .description(service.getDescription())
                 .iconUrl(service.getIconUrl())
                 .basePrice(service.getBasePrice())
+                .build();
+    }
+
+    private AdminServiceResponse mapToAdminServiceResponse(DefaultService service) {
+        return AdminServiceResponse.builder()
+                .id(service.getId())
+                .name(service.getName())
+                .description(service.getDescription())
+                .iconUrl(service.getIconUrl())
+                .basePrice(service.getBasePrice())
+                .createdAt(service.getCreatedAt())
+                .updatedAt(service.getUpdatedAt())
+                .deletedAt(service.getDeletedAt())
                 .build();
     }
 }

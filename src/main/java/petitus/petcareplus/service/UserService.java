@@ -227,4 +227,13 @@ public class UserService implements UserDetailsService {
         }
         return false;
     }
+
+    public boolean hasRole(String roleName) {
+        try {
+            User currentUser = getUser();
+            return currentUser.getRole().getName().name().equals(roleName);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

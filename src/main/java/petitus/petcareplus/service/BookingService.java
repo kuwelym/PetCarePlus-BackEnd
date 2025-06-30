@@ -5,13 +5,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.booking.BookingRequest;
 import petitus.petcareplus.dto.request.booking.BookingStatusUpdateRequest;
 import petitus.petcareplus.dto.request.booking.PetServiceBookingRequest;
+import petitus.petcareplus.dto.response.booking.AdminBookingResponse;
 import petitus.petcareplus.dto.response.booking.BookingPetServiceResponse;
 import petitus.petcareplus.dto.response.booking.BookingResponse;
+import petitus.petcareplus.dto.response.service.ProviderServiceResponse;
+import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.utils.PageRequestBuilder;
 import petitus.petcareplus.utils.enums.BookingStatus;
 import petitus.petcareplus.utils.enums.PaymentStatus;
@@ -21,6 +25,8 @@ import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ForbiddenException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.*;
+import petitus.petcareplus.model.spec.BookingFilterSpecification;
+import petitus.petcareplus.model.spec.criteria.BookingCriteria;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.repository.*;
 
@@ -457,5 +463,93 @@ public class BookingService {
                 .createdAt(booking.getCreatedAt())
                 .petServices(petServiceResponses)
                 .build();
+    }
+
+    private AdminBookingResponse mapToAdminBookingResponse(Booking booking) {
+        // Fetch pet bookings
+        List<PetBooking> petBookings = petBookingRepository.findByBookingId(booking.getId());
+        List<ServiceBooking> serviceBookings = serviceBookingRepository.findByBookingId(booking.getId());
+
+        // Map to response DTOs
+        List<BookingPetServiceResponse> petServiceResponses = new ArrayList<>();
+
+        Map<UUID, BigDecimal> servicePriceMap = serviceBookings.stream()
+                .collect(Collectors.toMap(sb -> sb.getId().getServiceId(), ServiceBooking::getPrice));
+
+        for (PetBooking pb : petBookings) {
+            BookingPetServiceResponse petService = BookingPetServiceResponse.builder()
+                    .petId(pb.getId().getPetId())
+                    .petName(pb.getPet().getName())
+                    .petImageUrl(pb.getPet().getImageUrl())
+                    .serviceId(pb.getId().getServiceId())
+                    .serviceName(pb.getService().getName())
+                    .price(servicePriceMap.get(pb.getId().getServiceId()))
+                    .build();
+            petServiceResponses.add(petService);
+        }
+
+        UserResponse userResponse = UserResponse.builder()
+                .id(booking.getUser().getId().toString())
+                .name(booking.getUser().getName())
+                .lastName(booking.getUser().getLastName())
+                .role(booking.getUser().getRole().getName().getValue())
+                .email(booking.getUser().getEmail())
+                .createdAt(booking.getUser().getCreatedAt())
+                .updatedAt(booking.getUser().getUpdatedAt())
+                .build();
+
+        ProviderServiceResponse providerServiceResponse = ProviderServiceResponse.builder()
+                .id(booking.getProviderService().getId())
+                .providerId(booking.getProviderService().getProvider().getId())
+                .serviceId(booking.getProviderService().getService().getId())
+                .serviceName(booking.getProviderService().getService().getName())
+                .iconUrl(booking.getProviderService().getService().getIconUrl())
+                .customPrice(booking.getProviderService().getCustomPrice())
+                .basePrice(booking.getProviderService().getService().getBasePrice())
+                .customDescription(booking.getProviderService().getCustomDescription())
+                .providerId(booking.getProvider().getId())
+                .providerName(booking.getProvider().getFullName())
+                .build();
+
+        return AdminBookingResponse.builder()
+                .id(booking.getId())
+                .user(userResponse)
+                .providerService(providerServiceResponse)
+                .status(booking.getStatus().name())
+                .totalPrice(booking.getTotalPrice())
+                .paymentStatus(booking.getPaymentStatus().name())
+                .bookingTime(booking.getBookingTime())
+                .scheduledStartTime(booking.getScheduledStartTime())
+                .scheduledEndTime(booking.getScheduledEndTime())
+                .actualEndTime(booking.getActualEndTime())
+                .cancellationReason(booking.getCancellationReason())
+                .note(booking.getNote())
+                .createdAt(booking.getCreatedAt())
+                .petList(petServiceResponses)
+                .updatedAt(booking.getUpdatedAt())
+                .deletedAt(booking.getDeletedAt())
+                .build();
+    }
+
+    public Page<AdminBookingResponse> getAllBookingsForAdmin(PaginationCriteria pagination,
+            BookingCriteria criteria) {
+
+        Specification<Booking> specification = new BookingFilterSpecification(criteria);
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Booking> bookings = bookingRepository.findAll(specification, pageRequest);
+
+        return bookings.map(this::mapToAdminBookingResponse);
+    }
+
+    public AdminBookingResponse getBookingByIdForAdmin(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("booking_not_found")));
+
+        // Check if booking was deleted
+        if (booking.getDeletedAt() != null) {
+            throw new ResourceNotFoundException(messageSourceService.get("booking_not_found"));
+        }
+
+        return mapToAdminBookingResponse(booking);
     }
 }
