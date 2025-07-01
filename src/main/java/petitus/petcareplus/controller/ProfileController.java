@@ -23,8 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static java.util.stream.Collectors.toList;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/profiles")
@@ -34,20 +32,6 @@ public class ProfileController extends BaseController {
     private final ProfileService profileService;
 
     private final MessageSourceService messageSourceService;
-
-    @PostMapping
-    @Operation(
-            tags = {"Profile"},
-            summary = "Create profile",
-            description = "API để tạo profile"
-    )
-    public ResponseEntity<SuccessResponse> createProfile(@RequestBody ProfileRequest profileRequest) {
-        profileService.saveProfile(profileRequest);
-
-        return ResponseEntity.ok(SuccessResponse.builder()
-                .message(messageSourceService.get("profile_created"))
-                .build());
-    }
 
     @PostMapping("/service-provider")
     @Operation(
@@ -101,7 +85,7 @@ public class ProfileController extends BaseController {
             @RequestParam(required = false) final String location,
 
 
-            @RequestParam(required = false) final int rating,
+            @RequestParam(required = false) final Integer rating,
 
             @RequestParam(required = false) final List<String> skills,
 
@@ -149,7 +133,7 @@ public class ProfileController extends BaseController {
 
         return ResponseEntity.ok(new PaginationResponse<>(profiles, profiles.getContent().stream()
                 .map(ProfileResponse::convert)
-                .collect(toList())));
+                .toList()));
     }
 
     @GetMapping("/{id}")

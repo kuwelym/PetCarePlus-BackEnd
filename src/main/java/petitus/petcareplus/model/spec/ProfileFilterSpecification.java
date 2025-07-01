@@ -36,7 +36,7 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
                 );
             }
 
-            if (criteria.getRating() != 0) {
+            if (criteria.getRating() != null && criteria.getRating() >= 0){
                 predicates.add(
                         builder.between(
                                 serviceProviderProfile.get("rating"),
