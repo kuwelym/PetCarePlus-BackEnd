@@ -48,26 +48,10 @@ public class ProfileService {
     }
 
     @Transactional
-    public void saveProfile(ProfileRequest profileRequest) {
-        User user = userService.getUser();
-
-        validateProfileExists(user.getId());
-
-        profileRepository.save(Profile.builder()
-                .gender(profileRequest.getGender())
-                .dob(LocalDate.parse(profileRequest.getDob()))
-                .avatarUrl(profileRequest.getAvatarUrl())
-                .location(profileRequest.getLocation())
-                .about(profileRequest.getAbout())
-                .user(user)
-                .build());
-    }
-
-    @Transactional
     public void updateProfile(ProfileRequest profileRequest) {
         User user = userService.getUser();
         Profile existingProfile = profileRepository.findByUserId(user.getId());
-        
+
         if (existingProfile == null) {
             throw new RuntimeException(messageSourceService.get("profile_not_found"));
         }
@@ -77,12 +61,12 @@ public class ProfileService {
         existingProfile.setDob(LocalDate.parse(profileRequest.getDob()));
         existingProfile.setLocation(profileRequest.getLocation());
         existingProfile.setAbout(profileRequest.getAbout());
-        
+
         profileRepository.save(existingProfile);
     }
 
-    private void validateProfileExists(UUID userId) {
-        if (profileRepository.findByUserId(userId) != null) {
+    private void validateServiceProfileExists(UUID profileId) {
+        if (serviceProviderProfileRepository.findByProfileId(profileId) != null) {
             throw new DataExistedException(messageSourceService.get("profile_exists"));
         }
     }
@@ -93,29 +77,15 @@ public class ProfileService {
                 .user(user)
                 .isServiceProvider(false)
                 .build();
-        
+
         profileRepository.save(defaultProfile);
     }
 
     @Transactional
     public void saveServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
         User user = userService.getUser();
-        validateProfileExists(user.getId());
-
         Profile existingProfile = findByUserId(user.getId());
-
-        if (existingProfile == null) {
-            // If the user doesn't have a profile, create one first
-            existingProfile = Profile.builder()
-                    .user(user)
-                    .dob(LocalDate.parse(serviceProviderProfileRequest.getDob()))
-                    .gender(serviceProviderProfileRequest.getGender())
-                    .avatarUrl(serviceProviderProfileRequest.getAvatarUrl())
-                    .location(serviceProviderProfileRequest.getLocation())
-                    .about(serviceProviderProfileRequest.getAbout())
-                    .build();
-            existingProfile = profileRepository.save(existingProfile);
-        }
+        validateServiceProfileExists(existingProfile.getId());
 
         // Create a new ServiceProviderProfile linked to the existing Profile
         ServiceProviderProfile serviceProviderProfile = ServiceProviderProfile.builder()
@@ -138,13 +108,13 @@ public class ProfileService {
     public void updateServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
         User user = userService.getUser();
         Profile existingProfile = findByUserId(user.getId());
-        
+
         if (existingProfile == null) {
             throw new RuntimeException(messageSourceService.get("profile_not_found"));
         }
-        
+
         ServiceProviderProfile existingServiceProviderProfile = existingProfile.getServiceProviderProfile();
-        
+
         if (existingServiceProviderProfile == null) {
             throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
         }
