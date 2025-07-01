@@ -1,13 +1,19 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.notification.NotificationRequest;
+import petitus.petcareplus.dto.response.notification.AdminNotificationResponse;
 import petitus.petcareplus.dto.response.notification.NotificationResponse;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Notification;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.repository.NotificationRepository;
+import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -101,5 +107,35 @@ public class NotificationService {
                 .createdAt(notification.getCreatedAt())
                 .deletedAt(notification.getDeletedAt())
                 .build();
+    }
+
+    private AdminNotificationResponse mapToAdminBookingResponse(Notification notification) {
+        return AdminNotificationResponse.builder()
+                .id(notification.getId())
+                .userIdSend(notification.getUserIdSend())
+                .userIdReceive(notification.getUserIdReceive())
+                .type(notification.getType())
+                .imageUrl(notification.getImageUrl())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .relatedId(notification.getRelatedId())
+                .isRead(notification.getIsRead())
+                .createdAt(notification.getCreatedAt())
+                .deletedAt(notification.getDeletedAt())
+                .build();
+    }
+
+    public Page<AdminNotificationResponse> getAllNotificationsForAdmin(PaginationCriteria pagination) {
+
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Notification> bookings = notificationRepository.findAll(pageRequest);
+
+        return bookings.map(this::mapToAdminBookingResponse);
+    }
+
+    public AdminNotificationResponse getNotificationForAdmin(UUID notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+        return mapToAdminBookingResponse(notification);
     }
 }
