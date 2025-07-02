@@ -192,7 +192,7 @@ public class PayOSPaymentService {
                 break;
 
             case "CANCELLED":
-                payment.setStatus(PaymentStatus.CANCELED);
+                payment.setStatus(PaymentStatus.CANCELLED);
                 log.info("Payment cancelled. Order code: {}", orderCode);
                 break;
 
@@ -291,7 +291,7 @@ public class PayOSPaymentService {
                     .orElseThrow(
                             () -> new ResourceNotFoundException("Payment not found with order code: " + orderCode));
 
-            payment.setStatus(PaymentStatus.CANCELED);
+            payment.setStatus(PaymentStatus.CANCELLED);
             paymentRepository.save(payment);
 
             log.info("PayOS payment link cancelled successfully. Order code: {}, Reason: {}", orderCode, reason);
@@ -382,7 +382,7 @@ public class PayOSPaymentService {
 
         return switch (payOSStatus.toUpperCase()) {
             case "PAID" -> PaymentStatus.COMPLETED;
-            case "CANCELLED" -> PaymentStatus.CANCELED;
+            case "CANCELLED" -> PaymentStatus.CANCELLED;
             case "PENDING" -> PaymentStatus.PENDING;
             case "FAILED" -> PaymentStatus.FAILED;
             default -> {
