@@ -32,6 +32,12 @@ public class WalletService {
         // private final PaymentRepository paymentRepository;
         private final BookingRepository bookingRepository;
 
+        public Wallet getWalletByUserId(UUID userId) {
+                return walletRepository.findByUserId(userId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Wallet not found for user ID: " + userId));
+        }
+
         public WalletResponse getWalletByUser(UUID userId) {
                 Wallet wallet = walletRepository.findByUserId(userId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -78,14 +84,13 @@ public class WalletService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Wallet not found for user ID: " + userId));
 
-                // Get payment
-                // Payment payment = paymentRepository.findById(paymentId)
-                // .orElseThrow(() -> new ResourceNotFoundException(
-                // "Payment not found for ID: " + paymentId));
+                Booking booking = null;
 
-                Booking booking = bookingRepository.findById(bookingId)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Booking not found for ID: " + bookingId));
+                if (type == TransactionType.SERVICE_PROVIDER_EARNING) {
+                        booking = bookingRepository.findById(bookingId)
+                                        .orElseThrow(() -> new ResourceNotFoundException(
+                                                        "Booking not found for ID: " + bookingId));
+                }
 
                 WalletTransaction transaction = WalletTransaction.builder()
                                 .wallet(wallet)
@@ -99,6 +104,22 @@ public class WalletService {
                 walletTransactionRepository.save(transaction);
 
                 return transaction;
+        }
+
+        // Update wallet
+        @Transactional
+        public void updateWallet(Wallet wallet) {
+                // Check if wallet exists
+                Wallet existingWallet = walletRepository.findById(wallet.getId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Wallet not found for ID: " + wallet.getId()));
+
+                // Update fields
+                existingWallet.setBalance(wallet.getBalance());
+                existingWallet.setPendingBalance(wallet.getPendingBalance());
+                existingWallet.setUpdatedAt(wallet.getUpdatedAt());
+
+                walletRepository.save(existingWallet);
         }
 
         private WalletResponse mapToWalletResponse(Wallet wallet) {
