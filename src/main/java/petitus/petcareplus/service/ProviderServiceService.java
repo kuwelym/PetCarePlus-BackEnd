@@ -1,6 +1,10 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,8 +17,12 @@ import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.User;
+import petitus.petcareplus.model.spec.ProviderServiceSpecification;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.ProviderServiceCriteria;
 import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceRepository;
+import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +36,23 @@ public class ProviderServiceService {
         private final ServiceRepository serviceRepository;
         private final UserService userService;
 
+        // New method
+        public Page<ProviderServiceResponse> getAllProviderServices(ProviderServiceCriteria criteria,
+                        PaginationCriteria pagination) {
+                // Build specification từ criteria
+                Specification<ProviderService> specification = buildSpecification(criteria);
+
+                // Build page request từ pagination
+                PageRequest pageRequest = PageRequestBuilder.build(pagination);
+
+                // Execute query
+                Page<ProviderService> providerServices = providerServiceRepository.findAll(specification, pageRequest);
+
+                // Convert to response DTO
+                return providerServices.map(this::mapToProviderServiceResponse);
+        }
+
+        // Old method
         public List<ProviderServiceResponse> getAllProviderServices() {
                 return providerServiceRepository.findAll().stream()
                                 .filter(ps -> ps.getDeletedAt() == null)
@@ -133,6 +158,24 @@ public class ProviderServiceService {
                 // Soft delete
                 providerService.setDeletedAt(LocalDateTime.now());
                 providerServiceRepository.save(providerService);
+        }
+
+        private Specification<ProviderService> buildSpecification(ProviderServiceCriteria criteria) {
+                if (criteria == null) {
+                        // Default: chỉ lấy active services
+                        return ProviderServiceSpecification.isActive();
+                }
+
+                return Specification
+                                .where(ProviderServiceSpecification.searchByQuery(criteria.getQuery()))
+                                .and(ProviderServiceSpecification.byProviderId(criteria.getProviderId()))
+                                .and(ProviderServiceSpecification.byServiceId(criteria.getServiceId()))
+                                .and(ProviderServiceSpecification.priceGreaterThanOrEqual(criteria.getMinCustomPrice()))
+                                .and(ProviderServiceSpecification.priceLessThanOrEqual(criteria.getMaxCustomPrice()))
+                                // .and(ProviderServiceSpecification.byLocation(criteria.getLocation()))
+                                .and(ProviderServiceSpecification.createdAfter(criteria.getCreatedAtStart()))
+                                .and(ProviderServiceSpecification.createdBefore(criteria.getCreatedAtEnd()))
+                                .and(ProviderServiceSpecification.isDeleted(criteria.getIsDeleted()));
         }
 
         private ProviderServiceResponse mapToProviderServiceResponse(ProviderService providerService) {

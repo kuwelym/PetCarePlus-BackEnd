@@ -40,7 +40,7 @@ public class ProfileResponse extends ResponseObject {
         if (profile == null) {
             return null;
         }
-        
+
         if (profile.isServiceProvider())
             return ServiceProviderProfileResponse.convert(profile.getServiceProviderProfile());
         ProfileResponse.ProfileResponseBuilder<?, ?> builder = ProfileResponse.builder()
