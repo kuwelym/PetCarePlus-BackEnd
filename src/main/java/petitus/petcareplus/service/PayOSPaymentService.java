@@ -16,10 +16,13 @@ import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Booking;
 import petitus.petcareplus.model.Payment;
+import petitus.petcareplus.model.wallet.Wallet;
 import petitus.petcareplus.repository.BookingRepository;
 import petitus.petcareplus.repository.PaymentRepository;
 import petitus.petcareplus.utils.enums.PaymentMethod;
 import petitus.petcareplus.utils.enums.PaymentStatus;
+import petitus.petcareplus.utils.enums.TransactionStatus;
+import petitus.petcareplus.utils.enums.TransactionType;
 import vn.payos.PayOS;
 import vn.payos.type.CheckoutResponseData;
 import vn.payos.type.ItemData;
@@ -52,6 +55,7 @@ public class PayOSPaymentService {
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final UserService userService;
+    private final WalletService walletService;
 
     @Transactional
     public PaymentUrlResponse createPayOSPayment(CreatePayOSPaymentRequest request) {
@@ -120,6 +124,7 @@ public class PayOSPaymentService {
             paymentRepository.save(savedPayment);
 
             booking.setPaymentStatus(savedPayment.getStatus());
+            booking.setPayment(savedPayment);
             bookingRepository.save(booking);
 
             log.info("PayOS payment created successfully. Order code: {}, Payment ID: {}",
@@ -185,6 +190,7 @@ public class PayOSPaymentService {
                 // Update booking payment status
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(petitus.petcareplus.utils.enums.PaymentStatus.COMPLETED);
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
 
                 log.info("Payment completed successfully. Order code: {}, Amount: {}",
@@ -266,6 +272,7 @@ public class PayOSPaymentService {
             if (payment.getStatus() == PaymentStatus.COMPLETED) {
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(PaymentStatus.COMPLETED);
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
             }
 
@@ -360,6 +367,7 @@ public class PayOSPaymentService {
 
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(payment.getStatus());
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
 
             } else {
