@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import petitus.petcareplus.configuration.WalletConfig;
 import petitus.petcareplus.dto.request.wallet.WithdrawalRequest;
 import petitus.petcareplus.dto.response.wallet.WithdrawalResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
@@ -32,17 +34,15 @@ public class WithdrawalService {
     private final WalletService walletService;
     private final UserService userService;
     private final NotificationService notificationService;
-
-    // Withdrawal fee configuration
-    private static final BigDecimal WITHDRAWAL_FEE_RATE = new BigDecimal("0.01"); // 1%
-    private static final BigDecimal MIN_WITHDRAWAL_FEE = new BigDecimal("5000"); // 5,000 VND
-    private static final BigDecimal MAX_WITHDRAWAL_FEE = new BigDecimal("50000"); // 50,000 VND
+    private final WalletConfig walletConfig;
 
     @Transactional
     public WithdrawalResponse createWithdrawalRequest(UUID providerId, WithdrawalRequest request) {
+
         // 1. Validate provider
         User provider = userService.getUser();
-        if (!provider.getRole().getName().equals("SERVICE_PROVIDER")) {
+        log.info("Provider role: {}", provider.getRole().getName());
+        if (!provider.getRole().getName().toString().equals("SERVICE_PROVIDER")) {
             throw new BadRequestException("Only service providers can request withdrawals");
         }
 
@@ -61,42 +61,48 @@ public class WithdrawalService {
         // 5. Check daily/monthly limits
         validateWithdrawalLimits(providerId, request.getAmount());
 
-        // 6. Create withdrawal record
-        Withdrawal withdrawal = Withdrawal.builder()
-                .wallet(wallet)
-                .provider(provider)
-                .amount(request.getAmount())
-                .fee(fee)
-                .netAmount(netAmount)
-                .status(WithdrawalStatus.PENDING)
-                .bankCode(request.getBankCode())
-                .bankName(request.getBankName())
-                .accountNumber(request.getAccountNumber())
-                .accountHolderName(request.getAccountHolderName())
-                .build();
+        try {
+            // 6. Create withdrawal record
+            Withdrawal withdrawal = Withdrawal.builder()
+                    .wallet(wallet)
+                    .provider(provider)
+                    .amount(request.getAmount())
+                    .fee(fee)
+                    .netAmount(netAmount)
+                    .status(WithdrawalStatus.PENDING)
+                    .bankCode(request.getBankCode())
+                    .bankName(request.getBankName())
+                    .accountNumber(request.getAccountNumber())
+                    .accountHolderName(request.getAccountHolderName())
+                    .build();
 
-        withdrawal = withdrawalRepository.save(withdrawal);
+            withdrawal = withdrawalRepository.save(withdrawal);
 
-        // 7. Hold the amount in wallet (move from balance to pending)
-        wallet.setBalance(wallet.getBalance().subtract(request.getAmount()));
-        wallet.setPendingBalance(wallet.getPendingBalance().add(request.getAmount()));
-        walletService.updateWallet(wallet);
+            // 7. Hold the amount in wallet (move from balance to pending)
+            wallet.setBalance(wallet.getBalance().subtract(request.getAmount()));
+            wallet.setPendingBalance(wallet.getPendingBalance().add(request.getAmount()));
+            walletService.updateWallet(wallet);
 
-        // 8. Create wallet transaction
-        walletService.createWalletTransaction(
-                providerId,
-                request.getAmount().negate(), // Negative amount for withdrawal
-                TransactionType.WITHDRAWAL,
-                TransactionStatus.PENDING,
-                "Withdrawal request: " + withdrawal.getId(),
-                null);
+            // 8. Create wallet transaction
+            walletService.createWalletTransaction(
+                    providerId,
+                    request.getAmount().negate(), // Negative amount for withdrawal
+                    TransactionType.WITHDRAWAL,
+                    TransactionStatus.PENDING,
+                    "Withdrawal request: " + withdrawal.getId(),
+                    null);
 
-        // 9. Send notification
-        // notificationService.sendWithdrawalRequestNotification(provider, withdrawal);
+            // 9. Send notification
+            // notificationService.sendWithdrawalRequestNotification(provider, withdrawal);
 
-        log.info("Withdrawal request created: {} for provider: {}", withdrawal.getId(), providerId);
+            log.info("Withdrawal request created: {} for provider: {}", withdrawal.getId(), providerId);
 
-        return mapToWithdrawalResponse(withdrawal);
+            return mapToWithdrawalResponse(withdrawal);
+        } catch (Exception e) {
+            log.error("Error creating withdrawal request: {}", e.getMessage());
+            throw new BadRequestException("Failed to create withdrawal request: " + e.getMessage());
+        }
+
     }
 
     public Page<WithdrawalResponse> getProviderWithdrawals(UUID providerId, Pageable pageable) {
@@ -175,14 +181,14 @@ public class WithdrawalService {
     }
 
     public BigDecimal calculateWithdrawalFee(BigDecimal amount) {
-        BigDecimal fee = amount.multiply(WITHDRAWAL_FEE_RATE);
+        BigDecimal fee = amount.multiply(walletConfig.getFeeRate());
 
-        if (fee.compareTo(MIN_WITHDRAWAL_FEE) < 0) {
-            return MIN_WITHDRAWAL_FEE;
+        if (fee.compareTo(walletConfig.getMinFee()) < 0) {
+            return walletConfig.getMinFee();
         }
 
-        if (fee.compareTo(MAX_WITHDRAWAL_FEE) > 0) {
-            return MAX_WITHDRAWAL_FEE;
+        if (fee.compareTo(walletConfig.getMaxFee()) > 0) {
+            return walletConfig.getMaxFee();
         }
 
         return fee;

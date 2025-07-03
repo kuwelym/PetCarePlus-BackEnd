@@ -84,14 +84,13 @@ public class WalletService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Wallet not found for user ID: " + userId));
 
-                // Get payment
-                // Payment payment = paymentRepository.findById(paymentId)
-                // .orElseThrow(() -> new ResourceNotFoundException(
-                // "Payment not found for ID: " + paymentId));
+                Booking booking = null;
 
-                Booking booking = bookingRepository.findById(bookingId)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Booking not found for ID: " + bookingId));
+                if (type == TransactionType.SERVICE_PROVIDER_EARNING) {
+                        booking = bookingRepository.findById(bookingId)
+                                        .orElseThrow(() -> new ResourceNotFoundException(
+                                                        "Booking not found for ID: " + bookingId));
+                }
 
                 WalletTransaction transaction = WalletTransaction.builder()
                                 .wallet(wallet)
