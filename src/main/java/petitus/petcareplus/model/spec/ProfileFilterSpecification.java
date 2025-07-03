@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
+import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.profile.Profile;
 import petitus.petcareplus.model.profile.ServiceProviderProfile;
 import petitus.petcareplus.model.spec.criteria.ProfileCriteria;
@@ -27,14 +28,6 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
 
         if (criteria.getIsServiceProvider() != null && criteria.getIsServiceProvider()) {
             Path<ServiceProviderProfile> serviceProviderProfile = root.get("serviceProviderProfile");
-            if (criteria.getQuery() != null) {
-                String q = String.format("%%%s%%", criteria.getQuery());
-                predicates.add(
-                        builder.or(
-                                builder.like(builder.lower(root.get("about")), q)
-                        )
-                );
-            }
 
             if (criteria.getRating() != null && criteria.getRating() >= 0){
                 predicates.add(
@@ -70,6 +63,17 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
                         (Predicate) builder.function("jsonb_exists", Boolean.class, serviceProviderProfile.get("availableTime"), builder.literal(criteria.getAvailableTime()))
                 );
             }
+        }
+
+        if (criteria.getQuery() != null) {
+            String q = String.format("%%%s%%", criteria.getQuery().toLowerCase());
+            Join<Profile, User> userJoin = root.join("user", JoinType.LEFT);
+            predicates.add(
+                    builder.or(
+                            builder.like(builder.lower(userJoin.get("name")), q),
+                            builder.like(builder.lower(userJoin.get("lastName")), q)
+                    )
+            );
         }
 
         if (criteria.getLocation() != null) {
