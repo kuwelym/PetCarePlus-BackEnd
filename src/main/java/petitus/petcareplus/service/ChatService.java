@@ -67,74 +67,6 @@ public class ChatService {
         return convertToResponse(chatMessage);
     }
 
-    @Transactional
-    public ChatMessageResponse saveImageMessage(ImageUploadResponse imageUploadResponse, UUID senderId) {
-        User sender = userService.findById(senderId);
-
-        ChatImageMessage chatImageMessage = new ChatImageMessage();
-        chatImageMessage.setSenderId(senderId);
-        chatImageMessage.setRecipientId(imageUploadResponse.getRecipientId());
-        chatImageMessage.setCaption(imageUploadResponse.getCaption());
-        
-        // Ensure content is never null for database compatibility
-        String content = (imageUploadResponse.getCaption() != null && !imageUploadResponse.getCaption().trim().isEmpty()) 
-                ? imageUploadResponse.getCaption() 
-                : "Image";
-        chatImageMessage.setContent(content);
-        
-        chatImageMessage.setImageUrl(imageUploadResponse.getImageUrl());
-        chatImageMessage.setPublicId(imageUploadResponse.getPublicId());
-        chatImageMessage.setImageName(imageUploadResponse.getImageName());
-        chatImageMessage.setMimeType(imageUploadResponse.getMimeType());
-        chatImageMessage.setFileSize(imageUploadResponse.getFileSize());
-        chatImageMessage.setWidth(imageUploadResponse.getWidth());
-        chatImageMessage.setHeight(imageUploadResponse.getHeight());
-        chatImageMessage.setThumbnailUrl(imageUploadResponse.getThumbnailUrl());
-        chatImageMessage.setMediumUrl(imageUploadResponse.getMediumUrl());
-        chatImageMessage.setLargeUrl(imageUploadResponse.getLargeUrl());
-        chatImageMessage.setIsRead(false);
-
-        ChatMessage chatMessage = chatImageMessageRepository.save(chatImageMessage);
-
-        // Create notification for image message
-        NotificationRequest notificationRequest = NotificationRequest.builder()
-                .userIdReceive(chatMessage.getRecipientId())
-                .type(Notifications.CHAT)
-                .title("New Image Message")
-                .message(sender.getFullName() + " sent you an image")
-                .relatedId(chatMessage.getId())
-                .build();
-
-        notificationService.pushNotification(notificationRequest, senderId);
-
-        // Send FCM notification for image message
-        sendImageFcmNotification(chatMessage, sender);
-
-        return convertToResponse(chatMessage);
-    }
-
-    private void sendImageFcmNotification(ChatMessage chatMessage, User sender) {
-        List<String> receiverTokens = fcmTokenService.getUserTokens(chatMessage.getRecipientId());
-        if (!receiverTokens.isEmpty()) {
-            String title = "New image from " + sender.getFullName();
-            String body = chatMessage.getContent() != null ? chatMessage.getContent() : "Image";
-
-            Map<String, String> data = createFcmNotificationData(
-                    chatMessage.getId().toString(),
-                    sender.getId().toString());
-            data.put("messageType", "IMAGE");
-            
-            // Cast to ChatImageMessage to access image-specific fields
-            if (chatMessage instanceof ChatImageMessage imageMessage) {
-                data.put("imageUrl", imageMessage.getImageUrl());
-            }
-
-            for (String token : receiverTokens) {
-                firebaseMessagingService.sendNotification(token, title, body, data);
-            }
-        }
-    }
-
     private ChatMessage createAndSaveChatMessage(ChatMessageRequest request, UUID senderId) {
         ChatMessage chatMessage = ChatMessage.builder()
                 .senderId(senderId)
@@ -210,12 +142,12 @@ public class ChatService {
         
         return messagesPage.getContent().stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
-    public void markMessageAsRead(UUID currentUserId, UUID otherUserId) {
-        chatMessageRepository.updateChatMessagesAsRead(
+    public List<UUID> markMessageAsRead(UUID currentUserId, UUID otherUserId) {
+        return chatMessageRepository.updateChatMessagesAsRead(
                 otherUserId,
                 currentUserId);
     }
@@ -223,6 +155,20 @@ public class ChatService {
     public long getUnreadMessageCount() {
         UUID currentUserId = userService.getCurrentUserId();
         return chatMessageRepository.countUnreadMessages(currentUserId);
+    }
+    
+    /**
+     * Get list of user IDs who have conversations with the specified user
+     * Used for targeted presence notifications
+     */
+    public List<String> getConversationPartnerIds(UUID userId) {
+        try {
+            // Use optimized query that directly returns user IDs (no timestamps or extra data)
+            return chatMessageRepository.findConversationPartnerIds(userId);
+        } catch (Exception e) {
+            log.error("Error getting conversation partner IDs for user {}: {}", userId, e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 
     public List<ConversationResponse> getAllConversations(int limit) {
@@ -251,7 +197,7 @@ public class ChatService {
     private List<UUID> extractUserIds(List<Object[]> results) {
         return results.stream()
                 .map(result -> UUID.fromString(result[0].toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<ConversationResponse> buildConversationResponses(UUID currentUserId, List<UUID> userIds) {
@@ -280,7 +226,7 @@ public class ChatService {
                     }
 
                     long unreadCount = 0;
-                    if (lastMessage.getRecipientId().equals(currentUserId) && !lastMessage.getIsRead()) {
+                    if (lastMessage.getRecipientId().equals(currentUserId) && Boolean.TRUE.equals(!lastMessage.getIsRead())) {
                         unreadCount = chatMessageRepository.countUnreadMessages(currentUserId);
                     }
 
@@ -305,7 +251,7 @@ public class ChatService {
                             .build();
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private ChatMessageResponse convertToResponse(ChatMessage message) {
