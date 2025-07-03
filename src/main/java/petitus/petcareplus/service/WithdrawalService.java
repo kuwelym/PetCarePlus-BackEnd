@@ -131,7 +131,7 @@ public class WithdrawalService {
         withdrawal = withdrawalRepository.save(withdrawal);
 
         // Send to bank transfer queue/service
-        processBankTransfer(withdrawal);
+        // processBankTransfer(withdrawal);
 
         // log.info("Withdrawal approved: {} by admin: {}", withdrawalId,
         // userService.getCurrentUsername());
@@ -157,7 +157,7 @@ public class WithdrawalService {
         withdrawal.setStatus(WithdrawalStatus.REJECTED);
         withdrawal.setRejectionReason(rejectionReason);
         withdrawal.setProcessedAt(LocalDateTime.now());
-        // withdrawal.setProcessedBy(userService.getCurrentUsername());
+        withdrawal.setProcessedBy(userService.getUser().getFullName());
 
         withdrawal = withdrawalRepository.save(withdrawal);
 
@@ -275,7 +275,7 @@ public class WithdrawalService {
                 .netAmount(withdrawal.getNetAmount())
                 .status(withdrawal.getStatus())
                 .bankName(withdrawal.getBankName())
-                .accountNumber(maskAccountNumber(withdrawal.getAccountNumber()))
+                .accountNumber(withdrawal.getAccountNumber())
                 .accountHolderName(withdrawal.getAccountHolderName())
                 .createdAt(withdrawal.getCreatedAt())
                 .processedAt(withdrawal.getProcessedAt())
