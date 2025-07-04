@@ -16,13 +16,10 @@ import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.Booking;
 import petitus.petcareplus.model.Payment;
-import petitus.petcareplus.model.wallet.Wallet;
 import petitus.petcareplus.repository.BookingRepository;
 import petitus.petcareplus.repository.PaymentRepository;
 import petitus.petcareplus.utils.enums.PaymentMethod;
 import petitus.petcareplus.utils.enums.PaymentStatus;
-import petitus.petcareplus.utils.enums.TransactionStatus;
-import petitus.petcareplus.utils.enums.TransactionType;
 import vn.payos.PayOS;
 import vn.payos.type.CheckoutResponseData;
 import vn.payos.type.ItemData;
@@ -55,7 +52,6 @@ public class PayOSPaymentService {
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final UserService userService;
-    private final WalletService walletService;
 
     @Transactional
     public PaymentUrlResponse createPayOSPayment(CreatePayOSPaymentRequest request) {

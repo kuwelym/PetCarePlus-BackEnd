@@ -14,7 +14,6 @@ import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.wallet.Wallet;
-import petitus.petcareplus.model.wallet.WalletTransaction;
 import petitus.petcareplus.model.wallet.Withdrawal;
 import petitus.petcareplus.repository.WithdrawalRepository;
 import petitus.petcareplus.utils.enums.TransactionStatus;
@@ -33,7 +32,6 @@ public class WithdrawalService {
     private final WithdrawalRepository withdrawalRepository;
     private final WalletService walletService;
     private final UserService userService;
-    private final NotificationService notificationService;
     private final WalletConfig walletConfig;
 
     @Transactional
@@ -126,15 +124,9 @@ public class WithdrawalService {
         withdrawal.setStatus(WithdrawalStatus.APPROVED);
         withdrawal.setAdminNote(adminNote);
         withdrawal.setProcessedAt(LocalDateTime.now());
-        // withdrawal.setProcessedBy(userService.getCurrentUsername());
+        withdrawal.setProcessedBy(userService.getUser().getFullName());
 
         withdrawal = withdrawalRepository.save(withdrawal);
-
-        // Send to bank transfer queue/service
-        // processBankTransfer(withdrawal);
-
-        // log.info("Withdrawal approved: {} by admin: {}", withdrawalId,
-        // userService.getCurrentUsername());
 
         return mapToWithdrawalResponse(withdrawal);
     }
@@ -169,13 +161,6 @@ public class WithdrawalService {
                 TransactionStatus.COMPLETED,
                 "Withdrawal rejected: " + withdrawal.getId(),
                 null);
-
-        // Send notification
-        // notificationService.sendWithdrawalRejectedNotification(withdrawal.getProvider(),
-        // withdrawal);
-
-        // log.info("Withdrawal rejected: {} by admin: {}", withdrawalId,
-        // userService.getCurrentUsername());
 
         return mapToWithdrawalResponse(withdrawal);
     }
@@ -212,30 +197,13 @@ public class WithdrawalService {
         }
     }
 
-    private void processBankTransfer(Withdrawal withdrawal) {
-        // This is where you integrate with bank transfer service
-        // For now, we'll mark it as processing and simulate the transfer
-
-        withdrawal.setStatus(WithdrawalStatus.PROCESSING);
-        withdrawal.setTransactionRef("TXN" + System.currentTimeMillis());
-        withdrawalRepository.save(withdrawal);
-
-        // TODO: Integrate with actual bank transfer service
-        // - VietQR
-
-        // - Bank APIs
-        // - Third-party services (Payos, etc.)
-
-        // For simulation, we'll complete it immediately
-        completeWithdrawal(withdrawal.getId(), "Bank transfer completed successfully");
-    }
-
     @Transactional
     public WithdrawalResponse completeWithdrawal(UUID withdrawalId, String transactionNote) {
         Withdrawal withdrawal = getWithdrawalById(withdrawalId);
 
         withdrawal.setStatus(WithdrawalStatus.COMPLETED);
         withdrawal.setAdminNote(transactionNote);
+        withdrawal.setTransactionRef("TXN" + System.currentTimeMillis());
 
         // Remove from pending balance
         Wallet wallet = withdrawal.getWallet();
@@ -285,10 +253,11 @@ public class WithdrawalService {
                 .build();
     }
 
-    private String maskAccountNumber(String accountNumber) {
-        if (accountNumber.length() <= 4) {
-            return accountNumber;
-        }
-        return "*".repeat(accountNumber.length() - 4) + accountNumber.substring(accountNumber.length() - 4);
-    }
+    // private String maskAccountNumber(String accountNumber) {
+    // if (accountNumber.length() <= 4) {
+    // return accountNumber;
+    // }
+    // return "*".repeat(accountNumber.length() - 4) +
+    // accountNumber.substring(accountNumber.length() - 4);
+    // }
 }
