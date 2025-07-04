@@ -16,6 +16,7 @@ import petitus.petcareplus.model.spec.criteria.ProfileCriteria;
 import petitus.petcareplus.repository.ProfileRepository;
 import petitus.petcareplus.repository.ServiceProviderProfileRepository;
 import petitus.petcareplus.repository.UserRepository;
+import petitus.petcareplus.utils.Constants;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ public class ProfileService {
     private final ServiceProviderProfileRepository serviceProviderProfileRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final RoleService roleService;
     private final MessageSourceService messageSourceService;
 
     public Page<Profile> findAll(ProfileCriteria criteria, PaginationCriteria paginationCriteria) {
@@ -103,6 +105,8 @@ public class ProfileService {
         Profile existingProfile = findByUserId(user.getId());
         validateServiceProfileExists(existingProfile.getId());
 
+        user.setRole(roleService.findByName(Constants.RoleEnum.SERVICE_PROVIDER));
+
         // Create a new ServiceProviderProfile linked to the existing Profile
         ServiceProviderProfile serviceProviderProfile = ServiceProviderProfile.builder()
                 .profile(existingProfile)
@@ -117,6 +121,7 @@ public class ProfileService {
         existingProfile.setServiceProvider(true);
         existingProfile.setServiceProviderProfile(serviceProviderProfile);
 
+        userRepository.save(user);
         serviceProviderProfileRepository.save(serviceProviderProfile);
     }
 
