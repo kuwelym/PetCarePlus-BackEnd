@@ -49,11 +49,6 @@ public class WebSocketController {
         event.setSenderId(userId);
         webSocketService.notifyTyping(event);
     }
-
-    @MessageMapping("/chat.read")
-    public void handleMessageRead(@Payload ReadReceiptRequest receipt) {
-        webSocketService.notifyMessageRead(receipt);
-    }
     
     @MessageMapping("/chat.markAsRead")
     public void handleMarkAsRead(
