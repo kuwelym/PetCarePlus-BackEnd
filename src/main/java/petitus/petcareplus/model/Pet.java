@@ -30,15 +30,19 @@ public class Pet {
 
     private Integer age;
 
+    private String dayOfBirth;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Species species;
 
     private String breed;
 
-    private Boolean hasChip;
+    private String gender;
 
-    private String vaccinated;
+    private String size;
+
+    private String description;
 
     private String imageUrl;
 

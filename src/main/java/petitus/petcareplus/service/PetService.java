@@ -30,10 +30,11 @@ public class PetService {
                 .userId(userId)
                 .name(request.getName())
                 .age(request.getAge())
+                .dayOfBirth(request.getDayOfBirth())
                 .species(request.getSpecies())
                 .breed(request.getBreed())
-                .hasChip(request.getHasChip())
-                .vaccinated(request.getVaccinated())
+                .gender(request.getGender())
+                .size(request.getSize())
                 .imageUrl(request.getImageUrl())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -70,8 +71,9 @@ public class PetService {
         if (request.getAge() != null) pet.setAge(request.getAge());
         if (request.getSpecies() != null) pet.setSpecies(request.getSpecies());
         if (request.getBreed() != null) pet.setBreed(request.getBreed());
-        if (request.getHasChip() != null) pet.setHasChip(request.getHasChip());
-        if (request.getVaccinated() != null) pet.setVaccinated(request.getVaccinated());
+        if (request.getGender() != null) pet.setGender(request.getGender());
+        if (request.getSize() != null) pet.setSize(request.getSize());
+        if (request.getDescription() != null) pet.setDescription(request.getDescription());
         if (request.getImageUrl() != null) pet.setImageUrl(request.getImageUrl());
 
         pet.setUpdatedAt(LocalDateTime.now());
@@ -99,10 +101,12 @@ public class PetService {
                 .userId(pet.getUserId())
                 .name(pet.getName())
                 .age(pet.getAge())
+                .dayOfBirth(pet.getDayOfBirth())
                 .species(pet.getSpecies())
                 .breed(pet.getBreed())
-                .hasChip(pet.getHasChip())
-                .vaccinated(pet.getVaccinated())
+                .gender(pet.getGender())
+                .size(pet.getSize())
+                .description(pet.getDescription())
                 .imageUrl(pet.getImageUrl())
                 .createdAt(pet.getCreatedAt())
                 .updatedAt(pet.getUpdatedAt())

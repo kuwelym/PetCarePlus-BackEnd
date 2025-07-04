@@ -9,7 +9,8 @@ public class UpdatePetRequest {
     private Integer age;
     private Species species;
     private String breed;
-    private Boolean hasChip;
-    private String vaccinated;
+    private String gender;
+    private String size;
+    private String description;
     private String imageUrl;
 }

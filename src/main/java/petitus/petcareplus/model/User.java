@@ -34,6 +34,9 @@ public class User extends AbstractBaseEntity {
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.DETACH)
     @JsonBackReference
     private Role role;
