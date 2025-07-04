@@ -12,6 +12,7 @@ import petitus.petcareplus.dto.request.chat.ReadReceiptRequest;
 import petitus.petcareplus.dto.request.chat.TypingEvent;
 import petitus.petcareplus.dto.request.chat.UserPresenceRequest;
 import petitus.petcareplus.dto.request.chat.ImageUploadRequest;
+import petitus.petcareplus.dto.request.chat.ActiveChatRequest;
 import petitus.petcareplus.dto.response.chat.ImageUploadResponse;
 import petitus.petcareplus.service.ChatService;
 import petitus.petcareplus.service.WebSocketService;
@@ -86,6 +87,24 @@ public class WebSocketController {
             webSocketService.handleHeartbeat(userId);
         } catch (Exception e) {
             log.error("Error processing heartbeat", e);
+        }
+    }
+
+    @MessageMapping("/chat.activeStatus")
+    public void handleActiveChat(
+            @Payload ActiveChatRequest activeChatRequest,
+            Principal principal
+    ) {
+        try {
+            UUID userId = UUID.fromString(principal.getName());
+            webSocketService.handleActiveChat(
+                    userId, 
+                    activeChatRequest.getOtherUserId(), 
+                    activeChatRequest.isActive()
+            );
+
+        } catch (Exception e) {
+            log.error("Error processing active chat status", e);
         }
     }
 

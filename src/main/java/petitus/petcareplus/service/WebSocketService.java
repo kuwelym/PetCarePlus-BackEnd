@@ -36,6 +36,7 @@ public class WebSocketService {
     @Lazy
     private final ChatService chatService;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ActiveChatService activeChatService;
 
     public void sendMessage(ChatMessageResponse chatMessageResponse) {
         String messageDestination = USER_DESTINATION_PREFIX + chatMessageResponse.getRecipientId() + "/queue/messages";
@@ -168,6 +169,13 @@ public class WebSocketService {
         }
     }
 
+    /**
+     * Handle active chat tracking - when user enters or leaves a specific chat conversation
+     */
+    public void handleActiveChat(UUID userId, UUID otherUserId, boolean isActive) {
+        activeChatService.handleActiveChat(userId, otherUserId, isActive);
+    }
+
     public void handleHeartbeat(UUID userId) {
         try {
             // Refresh TTL in Redis to keep user online
@@ -275,8 +283,16 @@ public class WebSocketService {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getUser() != null) {
             String userId = headerAccessor.getUser().getName();
-            log.info("WebSocket session disconnected for user: {}", userId);
             handleUserPresence(UUID.fromString(userId), false);
+            
+            cleanupUserActiveChats(UUID.fromString(userId));
         }
+    }
+
+    /**
+     * Clean up all active chats for a user (called on disconnect)
+     */
+    private void cleanupUserActiveChats(UUID userId) {
+        activeChatService.cleanupUserActiveChats(userId);
     }
 } 

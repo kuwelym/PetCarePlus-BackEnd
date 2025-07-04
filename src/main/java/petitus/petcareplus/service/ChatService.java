@@ -42,6 +42,7 @@ public class ChatService {
     private final FirebaseMessagingService firebaseMessagingService;
     private final CloudinaryService cloudinaryService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ActiveChatService activeChatService;
 
     @Transactional
     public ChatMessageResponse sendMessage(ChatMessageRequest request) {
@@ -91,6 +92,18 @@ public class ChatService {
     }
 
     private void sendFcmNotification(ChatMessage chatMessage, User sender) {
+        // Check if recipient is currently in active chat with sender
+        boolean isRecipientInActiveChat = activeChatService.isUserInActiveChatWith(
+                chatMessage.getRecipientId(), 
+                chatMessage.getSenderId()
+        );
+        
+        if (isRecipientInActiveChat) {
+            log.debug("Skipping FCM notification - recipient {} is in active chat with sender {}", 
+                    chatMessage.getRecipientId(), chatMessage.getSenderId());
+            return;
+        }
+        
         List<String> receiverTokens = fcmTokenService.getUserTokens(chatMessage.getRecipientId());
         if (!receiverTokens.isEmpty()) {
             String title = "New message from " + sender.getFullName();
@@ -103,6 +116,9 @@ public class ChatService {
             for (String token : receiverTokens) {
                 firebaseMessagingService.sendNotification(token, title, body, data);
             }
+            
+            log.debug("Sent FCM notification to {} tokens for message from {} to {}", 
+                    receiverTokens.size(), chatMessage.getSenderId(), chatMessage.getRecipientId());
         }
     }
 
