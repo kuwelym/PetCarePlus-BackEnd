@@ -40,6 +40,39 @@ public class WebSocketService {
         // Send the specific message to both users instead of full conversation updates
         sendMessageUpdate(chatMessageResponse.getSenderId(), chatMessageResponse);
         sendMessageUpdate(chatMessageResponse.getRecipientId(), chatMessageResponse);
+
+        // Auto-mark as read if recipient is in active chat with sender
+        autoMarkAsReadIfInActiveChat(chatMessageResponse);
+    }
+
+    /**
+     * Automatically mark messages as read if the recipient is currently in active chat with the sender
+     */
+    private void autoMarkAsReadIfInActiveChat(ChatMessageResponse chatMessageResponse) {
+        try {
+            UUID senderId = chatMessageResponse.getSenderId();
+            UUID recipientId = chatMessageResponse.getRecipientId();
+
+            // Check if recipient is in active chat with sender
+            if (activeChatService.isUserInActiveChatWith(recipientId, senderId)) {
+                // Mark messages as read
+                List<UUID> messageIds = chatService.markMessageAsRead(recipientId, senderId);
+
+                if (!messageIds.isEmpty()) {
+                    // Create and send read receipt to both users
+                    ReadReceiptResponse readReceiptResponse = new ReadReceiptResponse(
+                            messageIds,
+                            recipientId.toString(),
+                            senderId.toString()
+                    );
+                    
+                    sendReadReceipt(senderId, readReceiptResponse);
+                    sendReadReceipt(recipientId, readReceiptResponse);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error auto-marking messages as read: {}", e.getMessage(), e);
+        }
     }
 
     public void sendMessageUpdate(UUID userId, ChatMessageResponse message) {
