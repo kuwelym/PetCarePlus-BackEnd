@@ -46,7 +46,6 @@ public class CloudinaryService {
 
             Map<String, Object> result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
             
-            log.info("Successfully uploaded image to Cloudinary with public_id: {}", publicId);
             return result;
             
         } catch (IOException e) {
@@ -69,8 +68,7 @@ public class CloudinaryService {
             );
 
             Map<String, Object> result = cloudinary.uploader().upload(imageBytes, uploadParams);
-            
-            log.info("Successfully uploaded image to Cloudinary with public_id: {}", publicId);
+
             return result;
             
         } catch (IOException e) {

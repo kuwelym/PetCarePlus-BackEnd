@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
@@ -17,10 +16,8 @@ import petitus.petcareplus.dto.response.chat.UserPresenceResponse;
 import petitus.petcareplus.event.ImageUploadCompletedEvent;
 import petitus.petcareplus.event.ImageUploadErrorEvent;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -29,13 +26,12 @@ import java.util.UUID;
 public class WebSocketService {
 
     private static final String USER_DESTINATION_PREFIX = "/user/";
-    private static final String REDIS_ONLINE_USERS_KEY = "chat:online_users";
-    private static final int ONLINE_USER_TTL_SECONDS = 300; // 5 minutes TTL
 
     private final SimpMessagingTemplate messagingTemplate;
     @Lazy
     private final ChatService chatService;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final ActiveChatService activeChatService;
+    private final OnlineUserService onlineUserService;
 
     public void sendMessage(ChatMessageResponse chatMessageResponse) {
         String messageDestination = USER_DESTINATION_PREFIX + chatMessageResponse.getRecipientId() + "/queue/messages";
@@ -44,6 +40,43 @@ public class WebSocketService {
         // Send the specific message to both users instead of full conversation updates
         sendMessageUpdate(chatMessageResponse.getSenderId(), chatMessageResponse);
         sendMessageUpdate(chatMessageResponse.getRecipientId(), chatMessageResponse);
+
+        // Auto-mark as read if recipient is in active chat with sender
+        autoMarkAsReadIfInActiveChat(chatMessageResponse);
+    }
+
+    /**
+     * Automatically mark messages as read if the recipient is currently in active chat with the sender
+     */
+    private void autoMarkAsReadIfInActiveChat(ChatMessageResponse chatMessageResponse) {
+        autoMarkAsReadIfInActiveChat(chatMessageResponse.getSenderId(), chatMessageResponse.getRecipientId());
+    }
+
+    /**
+     * Core method to automatically mark messages as read if the recipient is currently in active chat with the sender
+     */
+    private void autoMarkAsReadIfInActiveChat(UUID senderId, UUID recipientId) {
+        try {
+            // Check if recipient is in active chat with sender
+            if (activeChatService.isUserInActiveChatWith(recipientId, senderId)) {
+                // Mark messages as read
+                List<UUID> messageIds = chatService.markMessageAsRead(recipientId, senderId);
+
+                if (!messageIds.isEmpty()) {
+                    // Create and send read receipt to both users
+                    ReadReceiptResponse readReceiptResponse = new ReadReceiptResponse(
+                            messageIds,
+                            recipientId.toString(),
+                            senderId.toString()
+                    );
+
+                    sendReadReceipt(senderId, readReceiptResponse);
+                    sendReadReceipt(recipientId, readReceiptResponse);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error auto-marking messages as read: {}", e.getMessage(), e);
+        }
     }
 
     public void sendMessageUpdate(UUID userId, ChatMessageResponse message) {
@@ -86,14 +119,11 @@ public class WebSocketService {
 
     public void handleUserPresence(UUID userId, boolean isOnline) {
         try {
-            String userIdStr = userId.toString();
-            String redisKey = REDIS_ONLINE_USERS_KEY + ":" + userIdStr;
+            // Delegate online status management to OnlineUserService
+            onlineUserService.handleUserPresence(userId, isOnline);
 
             if (isOnline) {
-                redisTemplate.opsForValue().set(redisKey, "online", Duration.ofSeconds(ONLINE_USER_TTL_SECONDS));
                 sendConversationPartnersStatus(userId);
-            } else {
-                redisTemplate.delete(redisKey);
             }
 
             notifyConversationPartners(userId, isOnline);
@@ -111,7 +141,7 @@ public class WebSocketService {
             List<String> conversationPartnerIds = chatService.getConversationPartnerIds(userId);
 
             for (String partnerId : conversationPartnerIds) {
-                if (isUserOnline(partnerId)) {
+                if (onlineUserService.isUserOnline(partnerId)) {
                     UserPresenceResponse presenceUpdate = new UserPresenceResponse(partnerId, true);
                     String destination = USER_DESTINATION_PREFIX + userId + "/queue/initial-online-users";
                     messagingTemplate.convertAndSend(destination, presenceUpdate);
@@ -143,47 +173,14 @@ public class WebSocketService {
     }
 
     /**
-     * Get current online users count from Redis
+     * Handle active chat tracking - when user enters or leaves a specific chat conversation
      */
-    public int getOnlineUsersCount() {
-        try {
-            Set<String> keys = redisTemplate.keys(REDIS_ONLINE_USERS_KEY + ":*");
-            return keys.size();
-        } catch (Exception e) {
-            log.error("Error getting online users count from Redis: {}", e.getMessage(), e);
-            return 0;
-        }
-    }
-
-    /**
-     * Check if a user is currently online in Redis
-     */
-    public boolean isUserOnline(String userId) {
-        try {
-            String redisKey = REDIS_ONLINE_USERS_KEY + ":" + userId;
-            return Boolean.TRUE.equals(redisTemplate.hasKey(redisKey));
-        } catch (Exception e) {
-            log.error("Error checking user online status in Redis: {}", e.getMessage(), e);
-            return false;
-        }
+    public void handleActiveChat(UUID userId, UUID otherUserId, boolean isActive) {
+        activeChatService.handleActiveChat(userId, otherUserId, isActive);
     }
 
     public void handleHeartbeat(UUID userId) {
-        try {
-            // Refresh TTL in Redis to keep user online
-            String redisKey = REDIS_ONLINE_USERS_KEY + ":" + userId.toString();
-
-            if (Boolean.TRUE.equals(redisTemplate.hasKey(redisKey))) {
-                // Refresh the TTL without triggering presence broadcast
-                redisTemplate.expire(redisKey, Duration.ofSeconds(ONLINE_USER_TTL_SECONDS));
-                log.debug("Refreshed TTL for user: {}", userId);
-            } else {
-                handleUserPresence(userId, true);
-            }
-        } catch (Exception e) {
-            log.error("Error handling heartbeat for user {}: {}", userId, e.getMessage(), e);
-            handleUserPresence(userId, true);
-        }
+        onlineUserService.handleHeartbeat(userId);
     }
 
     /**
@@ -199,9 +196,18 @@ public class WebSocketService {
             String senderDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getSenderId() + "/queue/image-message-confirm";
             messagingTemplate.convertAndSend(senderDestination, imageUploadResponse);
 
+            autoMarkAsReadIfInActiveChatForImage(imageUploadResponse);
+
         } catch (Exception e) {
             log.error("Error sending image message: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Automatically mark messages as read if the recipient is currently in active chat with the sender (for image messages)
+     */
+    private void autoMarkAsReadIfInActiveChatForImage(petitus.petcareplus.dto.response.chat.ImageUploadResponse imageUploadResponse) {
+        autoMarkAsReadIfInActiveChat(imageUploadResponse.getSenderId(), imageUploadResponse.getRecipientId());
     }
 
     /**
@@ -255,6 +261,9 @@ public class WebSocketService {
             String senderDestination = USER_DESTINATION_PREFIX + imageUploadResponse.getSenderId() + "/queue/image-upload-completed";
             messagingTemplate.convertAndSend(senderDestination, imageUploadResponse);
 
+            // Auto-mark as read if recipient is in active chat with sender
+            autoMarkAsReadIfInActiveChatForImage(imageUploadResponse);
+
         } catch (Exception e) {
             log.error("Error sending image upload completion notification: {}", e.getMessage(), e);
         }
@@ -275,8 +284,17 @@ public class WebSocketService {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getUser() != null) {
             String userId = headerAccessor.getUser().getName();
-            log.info("WebSocket session disconnected for user: {}", userId);
-            handleUserPresence(UUID.fromString(userId), false);
+            UUID userUUID = UUID.fromString(userId);
+
+            handleUserPresence(userUUID, false);
+            cleanupUserActiveChats(userUUID);
         }
+    }
+
+    /**
+     * Clean up all active chats for a user (called on disconnect)
+     */
+    private void cleanupUserActiveChats(UUID userId) {
+        activeChatService.cleanupUserActiveChats(userId);
     }
 } 
