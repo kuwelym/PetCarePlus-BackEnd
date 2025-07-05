@@ -15,6 +15,7 @@ import petitus.petcareplus.dto.request.auth.RegisterRequest;
 import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
 import petitus.petcareplus.dto.request.auth.ForgotPasswordRequest;
 import petitus.petcareplus.dto.request.auth.ResetPasswordRequest;
+import petitus.petcareplus.dto.request.auth.VerifyPasswordRequest;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
 import petitus.petcareplus.exceptions.RefreshTokenExpireException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
@@ -213,5 +214,30 @@ public class AuthService {
 
         // Delete the used token
         passwordResetTokenService.deleteByUserId(user.getId());
+    }
+
+    /**
+     * Verify current user's password
+     *
+     * @param request the password verification request
+     */
+    public void verifyPassword(VerifyPasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("insufficient_authentication"));
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof JwtUserDetails userDetails)) {
+            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("insufficient_authentication"));
+        }
+
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException(messageSourceService.get("bad_credentials"));
+        }
+
     }
 }

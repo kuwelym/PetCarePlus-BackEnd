@@ -3,6 +3,7 @@ package petitus.petcareplus.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,7 +14,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ServiceReviewRepository extends JpaRepository<ServiceReview, UUID> {
+public interface ServiceReviewRepository
+                extends JpaRepository<ServiceReview, UUID>, JpaSpecificationExecutor<ServiceReview> {
 
         @Query("SELECT sr FROM ServiceReview sr WHERE sr.deletedAt IS NULL AND sr.user.id = :userId ORDER BY sr.createdAt DESC")
         List<ServiceReview> findAllByUserId(@Param("userId") UUID userId);

@@ -10,6 +10,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProfileRequest {
+    private String name;
+    private String lastName;
+    private String phoneNumber;
     private String dob;
     private String avatarUrl;
     private String gender;

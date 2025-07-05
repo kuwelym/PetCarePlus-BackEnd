@@ -10,16 +10,19 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.controller.BaseController;
+import petitus.petcareplus.dto.request.auth.ChangeUserRoleRequest;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
 import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.UserCriteria;
+import petitus.petcareplus.service.AdminService;
 import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.UserService;
 import petitus.petcareplus.utils.Constants;
@@ -31,18 +34,18 @@ import java.util.stream.Collectors;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/users")
-@Tag(name = "User Management", description = "APIs for managing user profiles, preferences and settings")
+@Tag(name = "Admin", description = "APIs for Admin")
 public class AdminUserController extends BaseController {
         private final String[] SORT_COLUMNS = new String[] { "id", "email", "name", "lastName", "blockedAt",
                         "createdAt", "updatedAt", "deletedAt" };
 
         private final UserService userService;
+        private final AdminService adminService;
 
         private final MessageSourceService messageSourceService;
 
         @GetMapping
-        @Operation(tags = {
-                        "User Management" }, summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
+        @Operation(summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<PaginationResponse<UserResponse>> list(
                         @RequestParam(required = false) final List<String> roles,
 
@@ -51,6 +54,8 @@ public class AdminUserController extends BaseController {
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime createdAtEnd,
 
                         @RequestParam(required = false) final Boolean isBlocked,
+
+                        @RequestParam(required = false) final Boolean isEmailActivated,
 
                         @RequestParam(required = false) final String query,
 
@@ -72,6 +77,7 @@ public class AdminUserController extends BaseController {
                                                 .createdAtStart(createdAtStart)
                                                 .createdAtEnd(createdAtEnd)
                                                 .isBlocked(isBlocked)
+                                                .isEmailActivated(isEmailActivated)
                                                 .query(query)
                                                 .build(),
                                 PaginationCriteria.builder()
@@ -88,18 +94,38 @@ public class AdminUserController extends BaseController {
         }
 
         @GetMapping("/{id}")
-        @Operation(tags = {
-                        "User Management" }, summary = "Get an user", description = "API để lấy thông tin một người dùng", security = {
-                                        @SecurityRequirement(name = "bearerAuth") })
+        @Operation(summary = "Get an user", description = "API để lấy thông tin một người dùng", security = {
+                        @SecurityRequirement(name = "bearerAuth") })
         public ResponseEntity<UserResponse> get(@PathVariable final String id) throws BadRequestException {
                 return ResponseEntity.ok(UserResponse.convert(userService.findById(id)));
         }
 
         @PutMapping("/{id}")
-        @Operation(tags = {
-                        "User Management" }, summary = "Update information user", description = "Cập nhật thông tin người dùng", security = @SecurityRequirement(name = "bearerAuth"))
+        @Operation(summary = "Update information user", description = "Cập nhật thông tin người dùng", security = @SecurityRequirement(name = "bearerAuth"))
         public ResponseEntity<UserResponse> update(@PathVariable final String id,
                         @RequestBody @Valid final UpdateUserRequest user) throws BindException {
                 return ResponseEntity.ok(UserResponse.convert(userService.update(id, user)));
+        }
+
+        @PutMapping("/{id}/role")
+        @Operation(summary = "Change user role", description = "API để admin đổi role của user")
+        @PreAuthorize("hasAuthority('ADMIN')")
+        public ResponseEntity<UserResponse> changeUserRole(
+                        @PathVariable final String id,
+                        @RequestBody @Valid final ChangeUserRoleRequest request) {
+
+                User updatedUser = adminService.changeUserRole(id, request.getRole());
+                return ResponseEntity.ok(UserResponse.convert(updatedUser));
+        }
+
+        @PutMapping("/{id}/block")
+        @Operation(summary = "Block/Unblock user", description = "API để admin block/unblock user")
+        @PreAuthorize("hasAuthority('ADMIN')")
+        public ResponseEntity<UserResponse> toggleUserBlockStatus(
+                        @PathVariable final String id,
+                        @RequestParam final boolean blocked) {
+
+                User updatedUser = adminService.toggleUserBlockStatus(id, blocked);
+                return ResponseEntity.ok(UserResponse.convert(updatedUser));
         }
 }

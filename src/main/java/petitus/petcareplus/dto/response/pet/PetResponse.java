@@ -15,10 +15,12 @@ public class PetResponse {
     private UUID userId;
     private String name;
     private Integer age;
+    private String dayOfBirth;
     private Species species;
     private String breed;
-    private Boolean hasChip;
-    private String vaccinated;
+    private String gender;
+    private String size;
+    private String description;
     private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

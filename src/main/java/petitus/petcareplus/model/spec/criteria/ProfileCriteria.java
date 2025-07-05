@@ -19,7 +19,7 @@ public final class ProfileCriteria {
 
     private String location;
 
-    private int rating;
+    private Integer rating;
 
     private List<String> skills;
 

@@ -1,6 +1,7 @@
 package petitus.petcareplus.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import petitus.petcareplus.model.ProviderService;
 
@@ -8,7 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProviderServiceRepository extends JpaRepository<ProviderService, UUID> {
+public interface ProviderServiceRepository
+        extends JpaRepository<ProviderService, UUID>, JpaSpecificationExecutor<ProviderService> {
     List<ProviderService> findByProviderId(UUID providerId);
 
     List<ProviderService> findByServiceId(UUID serviceId);

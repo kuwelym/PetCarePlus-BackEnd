@@ -1,14 +1,12 @@
 package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,8 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.review.ServiceReviewRequest;
 import petitus.petcareplus.dto.request.review.ServiceReviewUpdateRequest;
 import petitus.petcareplus.dto.response.review.ServiceReviewResponse;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.ServiceReviewCriteria;
 import petitus.petcareplus.service.ServiceReviewService;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -67,19 +68,24 @@ public class ServiceReviewController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/user")
+    @GetMapping("/me")
     @PreAuthorize("hasAuthority('USER')")
-    @Operation(summary = "Get user's reviews", description = "Get all reviews created by the current user")
+    @Operation(summary = "Get current user's reviews", description = "Get all reviews created by the current user")
     public ResponseEntity<Page<ServiceReviewResponse>> getUserReviews(
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String direction,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "rating", "createdAt", "updatedAt" })
+                .build();
 
-        Page<ServiceReviewResponse> reviews = serviceReviewService.getUserReviews(pageRequest);
+        Page<ServiceReviewResponse> reviews = serviceReviewService.getUserReviews(pagination);
         return ResponseEntity.ok(reviews);
     }
 
@@ -87,32 +93,60 @@ public class ServiceReviewController {
     @Operation(summary = "Get reviews for a provider service", description = "Get reviews for a specific provider service")
     public ResponseEntity<Page<ServiceReviewResponse>> getProviderServiceReviews(
             @PathVariable UUID providerServiceId,
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String direction,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+            @RequestParam(required = false) Integer rating,
+            @RequestParam(required = false) Integer minRating,
+            @RequestParam(required = false) Integer maxRating,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtStart,
+            @RequestParam(required = false) Boolean hasComment,
 
-        return ResponseEntity.ok(serviceReviewService.getServiceReviews(providerServiceId, pageRequest));
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
+
+        ServiceReviewCriteria criteria = ServiceReviewCriteria.builder()
+                .rating(rating)
+                .providerServiceId(providerServiceId)
+                .minRating(minRating)
+                .maxRating(maxRating)
+                .createdAtStart(createdAtStart)
+                .hasComment(hasComment)
+                .build();
+
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "rating", "createdAt", "updatedAt" })
+                .build();
+
+        return ResponseEntity.ok(serviceReviewService.getServiceReviews(providerServiceId, criteria, pagination));
     }
 
-    @GetMapping("/provider/{providerId}")
-    @Operation(summary = "Get provider reviews", description = "Get all reviews for a specific service provider")
-    public ResponseEntity<Page<ServiceReviewResponse>> getProviderReviews(
-            @PathVariable UUID providerId,
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String direction,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy) {
+    // @GetMapping("/provider/{providerId}")
+    // @Operation(summary = "Get provider reviews", description = "Get all reviews
+    // for a specific service provider")
+    // public ResponseEntity<Page<ServiceReviewResponse>> getProviderReviews(
+    // @PathVariable UUID providerId,
+    // @RequestParam(defaultValue = "1") Integer page,
+    // @RequestParam(defaultValue = "10") Integer size,
+    // @RequestParam(required = false) String sortBy,
+    // @RequestParam(defaultValue = "asc") String sort) {
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+    // PaginationCriteria pagination = PaginationCriteria.builder()
+    // .page(page)
+    // .size(size)
+    // .sortBy(sortBy)
+    // .sort(sort)
+    // .columns(new String[] { "rating", "createdAt", "updatedAt" })
+    // .build();
 
-        Page<ServiceReviewResponse> reviews = serviceReviewService.getProviderReviews(providerId, pageRequest);
-        return ResponseEntity.ok(reviews);
-    }
+    // Page<ServiceReviewResponse> reviews =
+    // serviceReviewService.getProviderReviews(providerId, pagination);
+    // return ResponseEntity.ok(reviews);
+    // }
 
     @GetMapping("/provider/{providerId}/rating")
     @Operation(summary = "Get provider average rating", description = "Get the average rating for a service provider")

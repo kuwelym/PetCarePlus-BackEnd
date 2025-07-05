@@ -12,7 +12,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuperBuilder
-public class ServiceProviderProfileResponse extends ProfileResponse{
+public class ServiceProviderProfileResponse extends ProfileResponse {
     private String contactPhone;
 
     private String contactEmail;
@@ -25,7 +25,8 @@ public class ServiceProviderProfileResponse extends ProfileResponse{
 
     public static ServiceProviderProfileResponse convert(ServiceProviderProfile serviceProviderProfile) {
         Profile profile = serviceProviderProfile.getProfile();
-        ServiceProviderProfileResponse.ServiceProviderProfileResponseBuilder<?, ?> builder = ServiceProviderProfileResponse.builder()
+        ServiceProviderProfileResponse.ServiceProviderProfileResponseBuilder<?, ?> builder = ServiceProviderProfileResponse
+                .builder()
                 .id(profile.getId().toString())
                 .user(UserResponse.convert(profile.getUser()))
                 .dob(profile.getDob())

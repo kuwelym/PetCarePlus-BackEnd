@@ -56,14 +56,16 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException(messageSourceService.get("user_not_found_with_email", new String[]{username})));
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        messageSourceService.get("user_not_found_with_email", new String[] { username })));
 
         return JwtUserDetails.build(user);
     }
 
     public UserDetails loadUserById(String id) {
         User user = userRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new UsernameNotFoundException(messageSourceService.get("user_not_found_with_id", new String[]{id})));
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        messageSourceService.get("user_not_found_with_id", new String[] { id })));
 
         return JwtUserDetails.build(user);
     }
@@ -79,12 +81,14 @@ public class UserService implements UserDetailsService {
 
     public User findById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException(messageSourceService.get("user_not_found_with_id", new String[]{id.toString()})));
+                .orElseThrow(() -> new BadRequestException(
+                        messageSourceService.get("user_not_found_with_id", new String[] { id.toString() })));
     }
 
     public User findById(String id) {
         return userRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new BadRequestException(messageSourceService.get("user_not_found_with_id", new String[]{id})));
+                .orElseThrow(() -> new BadRequestException(
+                        messageSourceService.get("user_not_found_with_id", new String[] { id })));
     }
 
     public User update(String id, UpdateUserRequest request) throws BindException {
@@ -154,8 +158,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadRequestException(messageSourceService.get(
                         "user_not_found_with_email",
-                        new String[]{request.getEmail()}
-                )));
+                        new String[] { request.getEmail() })));
 
         if (user.getEmailVerifiedAt() != null) {
             throw new BadRequestException(messageSourceService.get("your_email_already_verified"));
@@ -181,7 +184,7 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public UUID getCurrentUserId(){
+    public UUID getCurrentUserId() {
         Authentication authentication = getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             try {
@@ -230,8 +233,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException(messageSourceService.get(
                         "user_not_found_with_email",
-                        new String[]{email}
-                )));
+                        new String[] { email })));
 
         // Only delete if the user has NOT verified their email
         if (user.getEmailVerifiedAt() == null) {
@@ -239,5 +241,14 @@ public class UserService implements UserDetailsService {
             return true;
         }
         return false;
+    }
+
+    public boolean hasRole(String roleName) {
+        try {
+            User currentUser = getUser();
+            return currentUser.getRole().getName().name().equals(roleName);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

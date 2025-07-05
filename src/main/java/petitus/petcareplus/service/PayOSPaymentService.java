@@ -120,6 +120,7 @@ public class PayOSPaymentService {
             paymentRepository.save(savedPayment);
 
             booking.setPaymentStatus(savedPayment.getStatus());
+            booking.setPayment(savedPayment);
             bookingRepository.save(booking);
 
             log.info("PayOS payment created successfully. Order code: {}, Payment ID: {}",
@@ -185,6 +186,7 @@ public class PayOSPaymentService {
                 // Update booking payment status
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(petitus.petcareplus.utils.enums.PaymentStatus.COMPLETED);
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
 
                 log.info("Payment completed successfully. Order code: {}, Amount: {}",
@@ -192,7 +194,7 @@ public class PayOSPaymentService {
                 break;
 
             case "CANCELLED":
-                payment.setStatus(PaymentStatus.CANCELED);
+                payment.setStatus(PaymentStatus.CANCELLED);
                 log.info("Payment cancelled. Order code: {}", orderCode);
                 break;
 
@@ -266,6 +268,7 @@ public class PayOSPaymentService {
             if (payment.getStatus() == PaymentStatus.COMPLETED) {
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(PaymentStatus.COMPLETED);
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
             }
 
@@ -291,7 +294,7 @@ public class PayOSPaymentService {
                     .orElseThrow(
                             () -> new ResourceNotFoundException("Payment not found with order code: " + orderCode));
 
-            payment.setStatus(PaymentStatus.CANCELED);
+            payment.setStatus(PaymentStatus.CANCELLED);
             paymentRepository.save(payment);
 
             log.info("PayOS payment link cancelled successfully. Order code: {}, Reason: {}", orderCode, reason);
@@ -360,6 +363,7 @@ public class PayOSPaymentService {
 
                 Booking booking = payment.getBooking();
                 booking.setPaymentStatus(payment.getStatus());
+                booking.setPayment(payment);
                 bookingRepository.save(booking);
 
             } else {
@@ -382,7 +386,7 @@ public class PayOSPaymentService {
 
         return switch (payOSStatus.toUpperCase()) {
             case "PAID" -> PaymentStatus.COMPLETED;
-            case "CANCELLED" -> PaymentStatus.CANCELED;
+            case "CANCELLED" -> PaymentStatus.CANCELLED;
             case "PENDING" -> PaymentStatus.PENDING;
             case "FAILED" -> PaymentStatus.FAILED;
             default -> {

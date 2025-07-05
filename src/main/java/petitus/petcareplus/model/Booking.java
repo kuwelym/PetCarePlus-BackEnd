@@ -50,6 +50,10 @@ public class Booking extends AbstractBaseEntity {
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.PENDING; // pending, paid, refunded
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
+
     @CreationTimestamp
     @Column(name = "booking_time", nullable = false)
     private LocalDateTime bookingTime;

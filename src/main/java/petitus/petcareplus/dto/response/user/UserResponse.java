@@ -20,6 +20,8 @@ public class UserResponse extends ResponseObject {
 
     private String lastName;
 
+    private String phoneNumber;
+
     private String role;
 
     private LocalDateTime emailVerifiedAt;
@@ -42,6 +44,7 @@ public class UserResponse extends ResponseObject {
                 .email(user.getEmail())
                 .name(user.getName())
                 .lastName(user.getLastName())
+                .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole().getName().getValue())
                 .emailVerifiedAt(user.getEmailVerifiedAt())
                 .blockedAt(user.getBlockedAt())
