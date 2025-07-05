@@ -333,8 +333,6 @@ public class ChatService {
             // Save to database
             ChatImageMessage savedMessage = chatImageMessageRepository.save(chatImageMessage);
             
-            log.info("Pending image message saved with ID: {}", savedMessage.getId());
-            
             return convertToResponse(savedMessage);
             
         } catch (Exception e) {
@@ -349,9 +347,9 @@ public class ChatService {
     @Async
     @Transactional
     public void processImageUploadAsync(String imageDataBase64, ImageUploadResponse originalResponse, UUID messageId) {
+        long startTime = System.currentTimeMillis();
+        
         try {
-            log.info("Starting async image upload process for message ID: {}", messageId);
-            
             // Decode base64 image data
             byte[] imageBytes;
             try {
@@ -365,19 +363,52 @@ public class ChatService {
             long maxSizeMB = 5; // 5MB limit
             long maxSizeBytes = maxSizeMB * 1024 * 1024;
             if (imageBytes.length > maxSizeBytes) {
-                handleUploadFailure(messageId, originalResponse.getSenderId(), 
-                    String.format("Image too large. Maximum size is %dMB, but received %.1fMB", 
-                        maxSizeMB, imageBytes.length / (1024.0 * 1024.0)));
+                String errorMessage = String.format("Image too large. Maximum size is %dMB, but received %.1fMB", 
+                        maxSizeMB, imageBytes.length / (1024.0 * 1024.0));
+                handleUploadFailure(messageId, originalResponse.getSenderId(), errorMessage);
                 return;
             }
             
-            // Upload to Cloudinary
-            Map<String, Object> uploadResult = cloudinaryService.uploadImage(imageBytes, "chat-images");
+            // Check for minimum viable image size
+            if (imageBytes.length < 1024) { // Less than 1KB is suspicious
+                handleUploadFailure(messageId, originalResponse.getSenderId(), "Image file is too small or corrupted");
+                return;
+            }
+            
+            // Upload to Cloudinary with timeout consideration
+            Map<String, Object> uploadResult;
+            try {
+                uploadResult = cloudinaryService.uploadImage(imageBytes, "chat-images");
+                
+                if (uploadResult == null || !uploadResult.containsKey("secure_url")) {
+                    log.error("Cloudinary upload returned null or invalid result for message ID: {}", messageId);
+                    handleUploadFailure(messageId, originalResponse.getSenderId(), "Cloud storage upload failed");
+                    return;
+                }
+                
+            } catch (IOException e) {
+                handleUploadFailure(messageId, originalResponse.getSenderId(),
+                        "Failed to upload image to cloud storage: " + e.getMessage());
+                return;
+            } catch (Exception e) {
+                handleUploadFailure(messageId, originalResponse.getSenderId(),
+                        "Unexpected cloud storage error: " + e.getMessage());
+                return;
+            }
             
             // Update the message with actual upload data
             Optional<ChatMessage> messageOpt = chatMessageRepository.findById(messageId);
-            if (messageOpt.isPresent() && messageOpt.get() instanceof ChatImageMessage chatImageMessage) {
-                
+            if (messageOpt.isEmpty()) {
+                handleUploadFailure(messageId, originalResponse.getSenderId(), "Message not found in database");
+                return;
+            }
+            
+            if (!(messageOpt.get() instanceof ChatImageMessage chatImageMessage)) {
+                handleUploadFailure(messageId, originalResponse.getSenderId(), "Invalid message type");
+                return;
+            }
+            
+            try {
                 // Update with actual Cloudinary data
                 chatImageMessage.setImageUrl((String) uploadResult.get("secure_url"));
                 chatImageMessage.setPublicId((String) uploadResult.get("public_id"));
@@ -417,24 +448,23 @@ public class ChatService {
                         .build();
                 
                 // Notify users of completion
-                eventPublisher.publishEvent(new ImageUploadCompletedEvent(completedResponse));
+                try {
+                    eventPublisher.publishEvent(new ImageUploadCompletedEvent(completedResponse));
+                } catch (Exception eventError) {
+                    log.error("Failed to publish completion event for message ID: {}", messageId, eventError);
+                }
                 
-                log.info("Image upload completed successfully for message ID: {}, URL: {}, Size: {}KB", 
-                        messageId, updatedMessage.getImageUrl(), imageBytes.length / 1024);
-                
-            } else {
-                log.error("Message not found or not an image message: {}", messageId);
-                handleUploadFailure(messageId, originalResponse.getSenderId(), "Message not found");
+            } catch (Exception dbUpdateError) {
+                log.error("Failed to update database for message ID: {}", messageId, dbUpdateError);
+                handleUploadFailure(messageId, originalResponse.getSenderId(), "Failed to save upload results");
             }
             
-        } catch (IOException e) {
-            log.error("Error uploading image to Cloudinary for message ID: {}", messageId, e);
-            handleUploadFailure(messageId, originalResponse.getSenderId(), 
-                    "Failed to upload image to cloud storage: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Unexpected error during async image upload for message ID: {}", messageId, e);
+            long processingTime = System.currentTimeMillis() - startTime;
+            log.error("Unexpected error during async image upload for message ID: {} after {}ms",
+                    messageId, processingTime, e);
             handleUploadFailure(messageId, originalResponse.getSenderId(), 
-                    "Unexpected error occurred while uploading image");
+                    "Unexpected error occurred while uploading image: " + e.getMessage());
         }
     }
 
