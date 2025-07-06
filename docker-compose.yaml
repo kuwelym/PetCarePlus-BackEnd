@@ -3,8 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      cache_from:
+        - pet-care-plus-app:latest
     container_name: pet-care-plus-app
-    restart: always
+    restart: on-failure
     ports:
       - "8080:8080"
     environment:
@@ -14,6 +16,8 @@ services:
       SPRING_DATA_REDIS_HOST: redis
     env_file:
       - .env
+    volumes:
+      - app-logs:/app/logs
     networks:
       - pet-care-plus-network
     depends_on:
@@ -23,7 +27,7 @@ services:
   postgres:
     image: postgres:13.11-bullseye
     container_name: pet-care-plus-postgres
-    restart: always
+    restart: on-failure
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pet-care-plus}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -41,7 +45,7 @@ services:
   redis:
     image: redis:7.0.12-alpine
     container_name: pet-care-plus-redis
-    restart: always
+    restart: on-failure
     command: redis-server --save 20 1 --loglevel warning
     volumes:
       - redis-data:/data
@@ -53,6 +57,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  app-logs:
 
 networks:
   pet-care-plus-network:

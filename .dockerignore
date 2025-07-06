@@ -1,0 +1,81 @@
+# Maven build artifacts (keep only what's needed for build)
+target/
+!target/*.jar
+!target/*.war
+!target/*.ear
+
+# IDE files
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+*.swp
+*.swo
+*~
+
+# Local configuration files
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# Test files (exclude to reduce build context)
+src/test/
+
+# Documentation
+README.md
+*.md
+
+# Git
+.git/
+.gitignore
+
+# Docker files (exclude to avoid recursive copying)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Build tools (not needed in container)
+.gradle/
+build/
+gradle/
+gradlew
+gradlew.bat
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Other
+*.tmp
+*.temp 
