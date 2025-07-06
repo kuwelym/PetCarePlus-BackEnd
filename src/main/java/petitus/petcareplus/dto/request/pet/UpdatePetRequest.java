@@ -9,6 +9,7 @@ public class UpdatePetRequest {
     private Integer age;
     private Species species;
     private String breed;
+    private String dayOfBirth;
     private String gender;
     private String size;
     private String description;

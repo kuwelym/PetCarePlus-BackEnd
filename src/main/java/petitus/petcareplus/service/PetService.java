@@ -72,6 +72,7 @@ public class PetService {
         if (request.getSpecies() != null) pet.setSpecies(request.getSpecies());
         if (request.getBreed() != null) pet.setBreed(request.getBreed());
         if (request.getGender() != null) pet.setGender(request.getGender());
+        if (request.getDayOfBirth() != null) pet.setDayOfBirth(request.getDayOfBirth());
         if (request.getSize() != null) pet.setSize(request.getSize());
         if (request.getDescription() != null) pet.setDescription(request.getDescription());
         if (request.getImageUrl() != null) pet.setImageUrl(request.getImageUrl());
