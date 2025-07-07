@@ -115,7 +115,6 @@ public class ProfileService {
                 .availableTime(serviceProviderProfileRequest.getAvailableTime())
                 .imageUrls(serviceProviderProfileRequest.getImageUrls())
                 .skills(serviceProviderProfileRequest.getSkills())
-                .rating(serviceProviderProfileRequest.getRating())
                 .build();
 
         existingProfile.setServiceProvider(true);
@@ -153,7 +152,6 @@ public class ProfileService {
         existingServiceProviderProfile.setAvailableTime(serviceProviderProfileRequest.getAvailableTime());
         existingServiceProviderProfile.setImageUrls(serviceProviderProfileRequest.getImageUrls());
         existingServiceProviderProfile.setSkills(serviceProviderProfileRequest.getSkills());
-        existingServiceProviderProfile.setRating(serviceProviderProfileRequest.getRating());
 
         // Save both the profile and service provider profile
         profileRepository.save(existingProfile);
