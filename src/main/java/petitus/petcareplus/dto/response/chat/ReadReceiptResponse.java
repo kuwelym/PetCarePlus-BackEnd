@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.UUID;
+
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 public class ReadReceiptResponse {
-    private String messageId;
+    private List<UUID> messageIds;
     private String senderId;
     private String recipientId;
-    private String readAt; // ISO 8601 format
 }

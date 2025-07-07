@@ -28,6 +28,7 @@ import petitus.petcareplus.model.*;
 import petitus.petcareplus.model.spec.BookingFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.BookingCriteria;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.wallet.Wallet;
 import petitus.petcareplus.repository.*;
 
 import java.math.BigDecimal;
@@ -175,9 +176,12 @@ public class BookingService {
                 }
 
                 booking.setActualEndTime(LocalDateTime.now());
-                walletService.createWalletTransaction(booking.getProvider().getId(), booking.getTotalPrice(),
-                        TransactionType.SERVICE_PROVIDER_EARNING, TransactionStatus.COMPLETED, "Payment for provider",
-                        bookingId);
+                // walletService.createWalletTransaction(booking.getProvider().getId(),
+                // booking.getTotalPrice(),
+                // TransactionType.SERVICE_PROVIDER_EARNING, TransactionStatus.COMPLETED,
+                // "Payment for provider",
+                // bookingId);
+                handleWalletAfterPaymentSuccess(booking);
                 break;
             case ONGOING:
                 // Only provider can mark as ongoing
@@ -418,6 +422,37 @@ public class BookingService {
         // Nếu không có trường hợp nào ở trên được xử lý, quăng exception chung
         throw new BadRequestException(messageSourceService.get("invalid_status_transition",
                 new Object[] { currentStatus.name(), newStatus.name() }));
+    }
+
+    @Transactional
+    public void handleWalletAfterPaymentSuccess(Booking booking) {
+
+        // Add money to provider wallet
+        UUID providerId = booking.getProvider().getId();
+
+        Payment payment = booking.getPayment();
+
+        if (payment == null || payment.getStatus() != PaymentStatus.COMPLETED) {
+            throw new BadRequestException(messageSourceService.get("payment_required_before_wallet_update"));
+        }
+        BigDecimal amount = payment.getAmount();
+        // Calculate platform fee (e.g., 5%)
+        BigDecimal platformFee = amount.multiply(new BigDecimal("0.05"));
+        BigDecimal providerEarning = amount.subtract(platformFee);
+
+        // Add to provider wallet
+        walletService.createWalletTransaction(
+                providerId,
+                providerEarning,
+                TransactionType.SERVICE_PROVIDER_EARNING,
+                TransactionStatus.COMPLETED,
+                "Earnings from booking: " + booking.getId(),
+                booking.getId());
+
+        // Update wallet balance
+        Wallet providerWallet = walletService.getWalletByUserId(providerId);
+        providerWallet.setBalance(providerWallet.getBalance().add(providerEarning));
+        walletService.updateWallet(providerWallet);
     }
 
     private BookingResponse mapToBookingResponse(Booking booking) {

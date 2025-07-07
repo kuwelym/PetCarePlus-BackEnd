@@ -15,6 +15,8 @@ import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ProfileCriteria;
 import petitus.petcareplus.repository.ProfileRepository;
 import petitus.petcareplus.repository.ServiceProviderProfileRepository;
+import petitus.petcareplus.repository.UserRepository;
+import petitus.petcareplus.utils.Constants;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDate;
@@ -26,7 +28,9 @@ import java.util.UUID;
 public class ProfileService {
     private final ProfileRepository profileRepository;
     private final ServiceProviderProfileRepository serviceProviderProfileRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
+    private final RoleService roleService;
     private final MessageSourceService messageSourceService;
 
     public Page<Profile> findAll(ProfileCriteria criteria, PaginationCriteria paginationCriteria) {
@@ -48,22 +52,6 @@ public class ProfileService {
     }
 
     @Transactional
-    public void saveProfile(ProfileRequest profileRequest) {
-        User user = userService.getUser();
-
-        validateProfileExists(user.getId());
-
-        profileRepository.save(Profile.builder()
-                .gender(profileRequest.getGender())
-                .dob(LocalDate.parse(profileRequest.getDob()))
-                .avatarUrl(profileRequest.getAvatarUrl())
-                .location(profileRequest.getLocation())
-                .about(profileRequest.getAbout())
-                .user(user)
-                .build());
-    }
-
-    @Transactional
     public void updateProfile(ProfileRequest profileRequest) {
         User user = userService.getUser();
         Profile existingProfile = profileRepository.findByUserId(user.getId());
@@ -72,17 +60,31 @@ public class ProfileService {
             throw new RuntimeException(messageSourceService.get("profile_not_found"));
         }
 
+        // Update User entity fields if provided
+        if (profileRequest.getName() != null) {
+            user.setName(profileRequest.getName());
+        }
+        if (profileRequest.getLastName() != null) {
+            user.setLastName(profileRequest.getLastName());
+        }
+        if (profileRequest.getPhoneNumber() != null) {
+            user.setPhoneNumber(profileRequest.getPhoneNumber());
+        }
+
+        // Update Profile entity fields
         existingProfile.setGender(profileRequest.getGender());
         existingProfile.setAvatarUrl(profileRequest.getAvatarUrl());
         existingProfile.setDob(LocalDate.parse(profileRequest.getDob()));
         existingProfile.setLocation(profileRequest.getLocation());
         existingProfile.setAbout(profileRequest.getAbout());
 
+        // Save both User and Profile entities
+        userRepository.save(user);
         profileRepository.save(existingProfile);
     }
 
-    private void validateProfileExists(UUID userId) {
-        if (profileRepository.findByUserId(userId) != null) {
+    private void validateServiceProfileExists(UUID profileId) {
+        if (serviceProviderProfileRepository.findByProfileId(profileId) != null) {
             throw new DataExistedException(messageSourceService.get("profile_exists"));
         }
     }
@@ -100,22 +102,10 @@ public class ProfileService {
     @Transactional
     public void saveServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
         User user = userService.getUser();
-        validateProfileExists(user.getId());
-
         Profile existingProfile = findByUserId(user.getId());
+        validateServiceProfileExists(existingProfile.getId());
 
-        if (existingProfile == null) {
-            // If the user doesn't have a profile, create one first
-            existingProfile = Profile.builder()
-                    .user(user)
-                    .dob(LocalDate.parse(serviceProviderProfileRequest.getDob()))
-                    .gender(serviceProviderProfileRequest.getGender())
-                    .avatarUrl(serviceProviderProfileRequest.getAvatarUrl())
-                    .location(serviceProviderProfileRequest.getLocation())
-                    .about(serviceProviderProfileRequest.getAbout())
-                    .build();
-            existingProfile = profileRepository.save(existingProfile);
-        }
+        user.setRole(roleService.findByName(Constants.RoleEnum.SERVICE_PROVIDER));
 
         // Create a new ServiceProviderProfile linked to the existing Profile
         ServiceProviderProfile serviceProviderProfile = ServiceProviderProfile.builder()
@@ -131,6 +121,7 @@ public class ProfileService {
         existingProfile.setServiceProvider(true);
         existingProfile.setServiceProviderProfile(serviceProviderProfile);
 
+        userRepository.save(user);
         serviceProviderProfileRepository.save(serviceProviderProfile);
     }
 

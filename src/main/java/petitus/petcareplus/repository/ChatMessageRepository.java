@@ -122,13 +122,29 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
     @Modifying
     @Query(value = """
-        UPDATE ChatMessage m
-        SET m.isRead = true, m.readAt = CURRENT_TIMESTAMP
-        WHERE m.senderId = :senderId AND m.recipientId = :recipientId
-        AND m.isRead = false
-        """)
-    void updateChatMessagesAsRead(
+        UPDATE chat_messages
+        SET is_read = true, read_at = CURRENT_TIMESTAMP
+        WHERE sender_id = :senderId AND recipient_id = :recipientId
+        AND is_read = false
+        RETURNING id
+        """, nativeQuery = true)
+    List<UUID> updateChatMessagesAsRead(
         @Param("senderId") UUID senderId,
         @Param("recipientId") UUID recipientId
     );
+
+    /**
+     * Get list of user IDs who have conversations with the specified user
+     * Optimized query for presence notifications - only returns user IDs, no timestamps
+     */
+    @Query(value = """
+        SELECT DISTINCT
+            CASE 
+                WHEN m.sender_id = :currentUserId THEN CAST(m.recipient_id AS VARCHAR)
+                ELSE CAST(m.sender_id AS VARCHAR)
+            END as user_id
+        FROM chat_messages m
+        WHERE m.sender_id = :currentUserId OR m.recipient_id = :currentUserId
+        """, nativeQuery = true)
+    List<String> findConversationPartnerIds(@Param("currentUserId") UUID currentUserId);
 } 

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import petitus.petcareplus.model.ChatImageMessage;
 import petitus.petcareplus.model.UploadStatus;
 
 import java.time.LocalDateTime;
@@ -35,4 +36,29 @@ public class ImageUploadResponse {
     private String largeUrl;
     
     private UploadStatus uploadStatus;
+    
+    /**
+     * Convert ChatImageMessage to ImageUploadResponse
+     */
+    public static ImageUploadResponse from(ChatImageMessage message, ImageUploadResponse originalResponse) {
+        return ImageUploadResponse.builder()
+                .id(message.getId())
+                .senderId(message.getSenderId())
+                .recipientId(message.getRecipientId())
+                .caption(message.getCaption())
+                .imageUrl(message.getImageUrl())
+                .publicId(message.getPublicId())
+                .imageName(message.getImageName())
+                .mimeType(message.getMimeType())
+                .fileSize(message.getFileSize())
+                .width(message.getWidth())
+                .height(message.getHeight())
+                .thumbnailUrl(message.getThumbnailUrl())
+                .mediumUrl(message.getMediumUrl())
+                .largeUrl(message.getLargeUrl())
+                .uploadedAt(originalResponse.getUploadedAt())
+                .isRead(message.getIsRead())
+                .uploadStatus(message.getUploadStatus())
+                .build();
+    }
 }

@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserPresenceRequest {
-    private String userId;
-    private boolean isOnline;
+    private boolean online;
 } 

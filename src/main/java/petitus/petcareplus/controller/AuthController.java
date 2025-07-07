@@ -169,4 +169,17 @@ public class AuthController {
                 .message(messageSourceService.get("password_reset_success"))
                 .build());
     }
+
+    @PostMapping("/verify-password")
+    @Operation(tags = {"Authentication"}, 
+            summary = "Verify Password", 
+            description = "API to verify current user's password before upgrading to service provider",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<SuccessResponse> verifyPassword(@Valid @RequestBody VerifyPasswordRequest request) {
+        authService.verifyPassword(request);
+        return ResponseEntity.ok(SuccessResponse.builder()
+                .message(messageSourceService.get("password_verified"))
+                .build());
+    }
 }
