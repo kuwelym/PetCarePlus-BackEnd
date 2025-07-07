@@ -19,8 +19,6 @@ public class ServiceProviderProfileRequest extends ProfileRequest {
 
     private Map<String, Object> availableTime;
 
-    private double rating;
-
     private Set<String> skills;
 
     private Set<String> imageUrls;
