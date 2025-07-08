@@ -9,7 +9,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.profile.ProfileRequest;
-import petitus.petcareplus.dto.request.profile.ServiceProviderProfileRequest;
 import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.SuccessResponse;
 import petitus.petcareplus.dto.response.profile.ProfileResponse;
@@ -20,7 +19,6 @@ import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.ProfileService;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,24 +27,12 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class ProfileController extends BaseController {
 
-    private final String[] SORT_COLUMNS = new String[]{"id", "rating", "dob", "gender", "createdAt", "updatedAt", "deletedAt"};
+    private final String[] SORT_COLUMNS = new String[]{"id", "dob", "gender", "createdAt", "updatedAt", "deletedAt"};
     private final ProfileService profileService;
 
     private final MessageSourceService messageSourceService;
 
-    @PostMapping("/service-provider")
-    @Operation(
-            tags = {"Profile"},
-            summary = "Create service provider profile",
-            description = "API để tạo profile cho nhà cung cấp dịch vụ"
-    )
-    public ResponseEntity<SuccessResponse> createServiceProviderProfile(@RequestBody ServiceProviderProfileRequest serviceProviderProfileRequest) {
-        profileService.saveServiceProviderProfile(serviceProviderProfileRequest);
 
-        return ResponseEntity.ok(SuccessResponse.builder()
-                .message(messageSourceService.get("profile_created"))
-                .build());
-    }
 
     @PutMapping
     @Operation(
@@ -62,19 +48,7 @@ public class ProfileController extends BaseController {
                 .build());
     }
 
-    @PutMapping("/service-provider")
-    @Operation(
-            tags = {"Profile"},
-            summary = "Update service provider profile",
-            description = "API để cập nhật profile cho nhà cung cấp dịch vụ"
-    )
-    public ResponseEntity<SuccessResponse> updateServiceProviderProfile(@RequestBody ServiceProviderProfileRequest serviceProviderProfileRequest) {
-        profileService.updateServiceProviderProfile(serviceProviderProfileRequest);
 
-        return ResponseEntity.ok(SuccessResponse.builder()
-                .message(messageSourceService.get("profile_updated"))
-                .build());
-    }
 
     @GetMapping
     @Operation(tags = {"Profile"}, summary = "Get all profiles", description = "API để lấy danh sách tất cả profile")
@@ -84,17 +58,6 @@ public class ProfileController extends BaseController {
             @RequestParam(required = false) final Boolean isServiceProvider,
 
             @RequestParam(required = false) final String location,
-
-
-            @RequestParam(required = false) final Integer rating,
-
-            @RequestParam(required = false) final List<String> skills,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime availableAtStart,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime availableAtEnd,
 
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime createdAtStart,
@@ -115,12 +78,7 @@ public class ProfileController extends BaseController {
         Page<Profile> profiles = profileService.findAll(
                 ProfileCriteria.builder()
                         .query(query)
-                        .isServiceProvider(isServiceProvider)
                         .location(location)
-                        .rating(rating)
-                        .skills(skills)
-                        .availableAtStart(availableAtStart)
-                        .availableAtEnd(availableAtEnd)
                         .createdAtStart(createdAtStart)
                         .createdAtEnd(createdAtEnd)
                         .build(),
