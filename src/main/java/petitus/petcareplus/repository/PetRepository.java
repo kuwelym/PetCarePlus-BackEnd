@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Repository
 public interface PetRepository extends JpaRepository<Pet, UUID>, JpaSpecificationExecutor<Pet> {
+    @Query("SELECT p FROM Pet p WHERE p.deletedAt IS NULL AND p.userId = :userId")
     List<Pet> findByUserId(UUID userId);
 
     @Query("SELECT p FROM Pet p WHERE p.deletedAt IS NULL AND p.userId = :ownerId ORDER BY p.createdAt DESC")
