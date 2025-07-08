@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/payments/payos-cancel").permitAll()
                         .requestMatchers("/payments/payos/webhook").permitAll()
                         .requestMatchers("/dev/create-admin").permitAll()
+                        .requestMatchers("/health").permitAll()
 
                         // Các route yêu cầu quyền USER
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
