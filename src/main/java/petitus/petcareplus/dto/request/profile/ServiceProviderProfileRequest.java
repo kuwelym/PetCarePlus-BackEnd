@@ -12,7 +12,7 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServiceProviderProfileRequest extends ProfileRequest {
+public class ServiceProviderProfileRequest {
     private String contactPhone;
 
     private String contactEmail;

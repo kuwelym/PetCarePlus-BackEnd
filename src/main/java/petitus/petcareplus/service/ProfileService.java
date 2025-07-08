@@ -139,13 +139,6 @@ public class ProfileService {
             throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
         }
 
-        // Update basic profile information (including location and about)
-        existingProfile.setGender(serviceProviderProfileRequest.getGender());
-        existingProfile.setDob(LocalDate.parse(serviceProviderProfileRequest.getDob()));
-        existingProfile.setAvatarUrl(serviceProviderProfileRequest.getAvatarUrl());
-        existingProfile.setLocation(serviceProviderProfileRequest.getLocation());
-        existingProfile.setAbout(serviceProviderProfileRequest.getAbout());
-
         // Update service provider specific information
         existingServiceProviderProfile.setContactEmail(serviceProviderProfileRequest.getContactEmail());
         existingServiceProviderProfile.setContactPhone(serviceProviderProfileRequest.getContactPhone());
