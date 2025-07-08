@@ -9,8 +9,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.profile.ProfileRequest;
-import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.SuccessResponse;
+import petitus.petcareplus.dto.response.profile.ProfilePaginationResponse;
 import petitus.petcareplus.dto.response.profile.ProfileResponse;
 import petitus.petcareplus.model.profile.Profile;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
@@ -52,10 +52,8 @@ public class ProfileController extends BaseController {
 
     @GetMapping
     @Operation(tags = {"Profile"}, summary = "Get all profiles", description = "API để lấy danh sách tất cả profile")
-    public ResponseEntity<PaginationResponse<ProfileResponse>> list(
+    public ResponseEntity<ProfilePaginationResponse<ProfileResponse>> list(
             @RequestParam(required = false) final String query,
-
-            @RequestParam(required = false) final Boolean isServiceProvider,
 
             @RequestParam(required = false) final String location,
 
@@ -90,7 +88,7 @@ public class ProfileController extends BaseController {
                         .columns(SORT_COLUMNS)
                         .build());
 
-        return ResponseEntity.ok(new PaginationResponse<>(profiles, profiles.getContent().stream()
+        return ResponseEntity.ok(new ProfilePaginationResponse<>(profiles, profiles.getContent().stream()
                 .map(ProfileResponse::convert)
                 .toList()));
     }

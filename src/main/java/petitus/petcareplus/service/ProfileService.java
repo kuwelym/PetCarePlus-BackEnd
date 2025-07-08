@@ -89,9 +89,4 @@ public class ProfileService {
 
         profileRepository.save(defaultProfile);
     }
-
-
-
-
-
 }

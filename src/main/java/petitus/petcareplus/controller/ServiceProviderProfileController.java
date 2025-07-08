@@ -9,8 +9,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.profile.ServiceProviderProfileRequest;
-import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.SuccessResponse;
+import petitus.petcareplus.dto.response.profile.ProfilePaginationResponse;
 import petitus.petcareplus.dto.response.profile.ServiceProviderProfileResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ServiceProviderProfileCriteria;
@@ -62,7 +62,7 @@ public class ServiceProviderProfileController extends BaseController {
 
     @GetMapping
     @Operation(tags = {"Service Provider Profile"}, summary = "Get all service provider profiles", description = "API để lấy danh sách tất cả service provider profile")
-    public ResponseEntity<PaginationResponse<ServiceProviderProfileResponse>> list(
+    public ResponseEntity<ProfilePaginationResponse<ServiceProviderProfileResponse>> list(
             @RequestParam(required = false) final String query,
 
             @RequestParam(required = false) final String location,
@@ -115,7 +115,7 @@ public class ServiceProviderProfileController extends BaseController {
                         .columns(SORT_COLUMNS)
                         .build());
 
-        return ResponseEntity.ok(new PaginationResponse<>(serviceProviderProfiles, serviceProviderProfiles.getContent().stream()
+        return ResponseEntity.ok(new ProfilePaginationResponse<>(serviceProviderProfiles, serviceProviderProfiles.getContent().stream()
                 .map(ServiceProviderProfileResponse::convert)
                 .toList()));
     }
