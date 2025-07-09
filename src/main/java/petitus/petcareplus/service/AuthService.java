@@ -61,6 +61,7 @@ public class AuthService {
     private final PasswordResetTokenService passwordResetTokenService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional
     private User createUser(RegisterRequest request) throws BindException {
         BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
         userRepository.findByEmail(request.getEmail())
@@ -87,8 +88,8 @@ public class AuthService {
             throw new BadCredentialsException(messageSourceService.get("email_not_verified"));
         }
 
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(email, password);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email,
+                password);
         try {
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
             return generateTokens(((JwtUserDetails) authentication.getPrincipal()).getId());
@@ -98,21 +99,23 @@ public class AuthService {
         }
     }
 
+    @Transactional
     public void register(RegisterRequest request) throws BindException {
         User user = createUser(request);
         user.setRole(roleService.findByName(Constants.RoleEnum.USER));
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        profileService.createDefaultProfile(user);
+        profileService.createDefaultProfile(savedUser);
 
-        userService.emailVerificationEventPublisher(user);
+        userService.emailVerificationEventPublisher(savedUser);
 
-        generateTokens(user.getId());
+        generateTokens(savedUser.getId());
     }
 
     /**
      * Refreshes the access token, restrains the refresh token
+     * 
      * @param refreshToken the refresh token
      */
     public TokenResponse refresh(final String refreshToken) {
@@ -136,8 +139,7 @@ public class AuthService {
                         TokenResponse.TokenExpirationResponse.builder()
                                 .token(jwtTokenProvider.getTokenExpiresIn())
                                 .refreshToken(jwtTokenProvider.getRefreshTokenExpiresIn())
-                                .build()
-                )
+                                .build())
                 .build();
     }
 
@@ -149,7 +151,7 @@ public class AuthService {
         jwtTokenService.delete(jwtToken);
     }
 
-    public TokenResponse generateTokens(final UUID id){
+    public TokenResponse generateTokens(final UUID id) {
         String token = jwtTokenProvider.generateToken(id.toString());
         String refreshToken = jwtTokenProvider.generateRefreshToken(id.toString());
 
@@ -168,8 +170,7 @@ public class AuthService {
                         TokenResponse.TokenExpirationResponse.builder()
                                 .token(jwtTokenProvider.getTokenExpiresIn())
                                 .refreshToken(jwtTokenProvider.getRefreshTokenExpiresIn())
-                                .build()
-                )
+                                .build())
                 .build();
     }
 
@@ -178,12 +179,14 @@ public class AuthService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("authentication_credentials_not_found"));
+            throw new AuthenticationCredentialsNotFoundException(
+                    messageSourceService.get("authentication_credentials_not_found"));
         }
 
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof JwtUserDetails userDetails)) {
-            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("authentication_credentials_not_found"));
+            throw new AuthenticationCredentialsNotFoundException(
+                    messageSourceService.get("authentication_credentials_not_found"));
         }
 
         User user = userRepository.findById(userDetails.getId())
@@ -192,7 +195,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new BadCredentialsException(messageSourceService.get("current_password_incorrect"));
         }
-        
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -224,12 +227,14 @@ public class AuthService {
     public void verifyPassword(VerifyPasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("insufficient_authentication"));
+            throw new AuthenticationCredentialsNotFoundException(
+                    messageSourceService.get("insufficient_authentication"));
         }
 
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof JwtUserDetails userDetails)) {
-            throw new AuthenticationCredentialsNotFoundException(messageSourceService.get("insufficient_authentication"));
+            throw new AuthenticationCredentialsNotFoundException(
+                    messageSourceService.get("insufficient_authentication"));
         }
 
         User user = userRepository.findById(userDetails.getId())

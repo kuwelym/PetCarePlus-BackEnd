@@ -128,7 +128,7 @@ public class NotificationService {
     public Page<AdminNotificationResponse> getAllNotificationsForAdmin(PaginationCriteria pagination) {
 
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
-        Page<Notification> bookings = notificationRepository.findAll(pageRequest);
+        Page<Notification> bookings = notificationRepository.findByDeletedAtIsNull(pageRequest);
 
         return bookings.map(this::mapToAdminBookingResponse);
     }
