@@ -7,6 +7,7 @@ import petitus.petcareplus.model.profile.Profile;
 import petitus.petcareplus.model.profile.ServiceProviderProfile;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 
 @Getter
@@ -27,6 +28,8 @@ public class ServiceProviderProfileResponse {
 
     private double rating;
 
+    private Map<String, Object> availableTime;
+
     private Set<String> imageUrls;
 
     private LocalDateTime createdAt;
@@ -45,6 +48,7 @@ public class ServiceProviderProfileResponse {
                 .businessBio(serviceProviderProfile.getBusinessBio())
                 .contactPhone(serviceProviderProfile.getContactPhone())
                 .contactEmail(serviceProviderProfile.getContactEmail())
+                .availableTime(serviceProviderProfile.getAvailableTime())
                 .rating(serviceProviderProfile.getRating())
                 .imageUrls(serviceProviderProfile.getImageUrls())
                 .createdAt(profile.getCreatedAt())
