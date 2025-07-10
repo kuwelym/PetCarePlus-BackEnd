@@ -12,14 +12,16 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServiceProviderProfileRequest extends ProfileRequest {
+public class ServiceProviderProfileRequest {
+    private String businessName;
+
+    private String businessBio;
+
     private String contactPhone;
 
     private String contactEmail;
 
     private Map<String, Object> availableTime;
-
-    private Set<String> skills;
 
     private Set<String> imageUrls;
 

@@ -19,7 +19,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Profile extends AbstractBaseEntity {
 
-    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private ServiceProviderProfile serviceProviderProfile;
 
     @OneToOne

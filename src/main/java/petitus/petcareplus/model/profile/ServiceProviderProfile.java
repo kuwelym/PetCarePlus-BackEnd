@@ -19,20 +19,19 @@ import java.util.Set;
 @AllArgsConstructor
 public class ServiceProviderProfile extends AbstractBaseEntity{
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id", nullable = false, unique = true)
     @JsonBackReference
     private Profile profile;
 
     @ElementCollection
-    @CollectionTable(name = "service_provider_skills", joinColumns = @JoinColumn(name = "profile_id"))
-    @Column(name = "skill")
-    private Set<String> skills;
-
-    @ElementCollection
-    @CollectionTable(name = "service_provider_image_urls", joinColumns = @JoinColumn(name = "profile_id"))
+    @CollectionTable(name = "service_provider_image_urls", joinColumns = @JoinColumn(name = "service_provider_profile_id"))
     @Column(name = "image_url")
     private Set<String> imageUrls;
+
+    private String businessName;
+
+    private String businessBio;
 
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;

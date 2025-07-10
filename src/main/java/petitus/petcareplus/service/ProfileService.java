@@ -5,18 +5,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petitus.petcareplus.dto.request.profile.ProfileRequest;
-import petitus.petcareplus.dto.request.profile.ServiceProviderProfileRequest;
-import petitus.petcareplus.exceptions.DataExistedException;
+
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.profile.Profile;
-import petitus.petcareplus.model.profile.ServiceProviderProfile;
 import petitus.petcareplus.model.spec.ProfileFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ProfileCriteria;
 import petitus.petcareplus.repository.ProfileRepository;
-import petitus.petcareplus.repository.ServiceProviderProfileRepository;
+
 import petitus.petcareplus.repository.UserRepository;
-import petitus.petcareplus.utils.Constants;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.time.LocalDate;
@@ -27,10 +24,8 @@ import java.util.UUID;
 @Transactional
 public class ProfileService {
     private final ProfileRepository profileRepository;
-    private final ServiceProviderProfileRepository serviceProviderProfileRepository;
     private final UserRepository userRepository;
     private final UserService userService;
-    private final RoleService roleService;
     private final MessageSourceService messageSourceService;
 
     public Page<Profile> findAll(ProfileCriteria criteria, PaginationCriteria paginationCriteria) {
@@ -83,11 +78,7 @@ public class ProfileService {
         profileRepository.save(existingProfile);
     }
 
-    private void validateServiceProfileExists(UUID profileId) {
-        if (serviceProviderProfileRepository.findByProfileId(profileId) != null) {
-            throw new DataExistedException(messageSourceService.get("profile_exists"));
-        }
-    }
+
 
     @Transactional
     public void createDefaultProfile(User user) {
@@ -98,64 +89,4 @@ public class ProfileService {
 
         profileRepository.save(defaultProfile);
     }
-
-    @Transactional
-    public void saveServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
-        User user = userService.getUser();
-        Profile existingProfile = findByUserId(user.getId());
-        validateServiceProfileExists(existingProfile.getId());
-
-        user.setRole(roleService.findByName(Constants.RoleEnum.SERVICE_PROVIDER));
-
-        // Create a new ServiceProviderProfile linked to the existing Profile
-        ServiceProviderProfile serviceProviderProfile = ServiceProviderProfile.builder()
-                .profile(existingProfile)
-                .contactEmail(serviceProviderProfileRequest.getContactEmail())
-                .contactPhone(serviceProviderProfileRequest.getContactPhone())
-                .availableTime(serviceProviderProfileRequest.getAvailableTime())
-                .imageUrls(serviceProviderProfileRequest.getImageUrls())
-                .skills(serviceProviderProfileRequest.getSkills())
-                .build();
-
-        existingProfile.setServiceProvider(true);
-        existingProfile.setServiceProviderProfile(serviceProviderProfile);
-
-        userRepository.save(user);
-        serviceProviderProfileRepository.save(serviceProviderProfile);
-    }
-
-    @Transactional
-    public void updateServiceProviderProfile(ServiceProviderProfileRequest serviceProviderProfileRequest) {
-        User user = userService.getUser();
-        Profile existingProfile = findByUserId(user.getId());
-
-        if (existingProfile == null) {
-            throw new RuntimeException(messageSourceService.get("profile_not_found"));
-        }
-
-        ServiceProviderProfile existingServiceProviderProfile = existingProfile.getServiceProviderProfile();
-
-        if (existingServiceProviderProfile == null) {
-            throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
-        }
-
-        // Update basic profile information (including location and about)
-        existingProfile.setGender(serviceProviderProfileRequest.getGender());
-        existingProfile.setDob(LocalDate.parse(serviceProviderProfileRequest.getDob()));
-        existingProfile.setAvatarUrl(serviceProviderProfileRequest.getAvatarUrl());
-        existingProfile.setLocation(serviceProviderProfileRequest.getLocation());
-        existingProfile.setAbout(serviceProviderProfileRequest.getAbout());
-
-        // Update service provider specific information
-        existingServiceProviderProfile.setContactEmail(serviceProviderProfileRequest.getContactEmail());
-        existingServiceProviderProfile.setContactPhone(serviceProviderProfileRequest.getContactPhone());
-        existingServiceProviderProfile.setAvailableTime(serviceProviderProfileRequest.getAvailableTime());
-        existingServiceProviderProfile.setImageUrls(serviceProviderProfileRequest.getImageUrls());
-        existingServiceProviderProfile.setSkills(serviceProviderProfileRequest.getSkills());
-
-        // Save both the profile and service provider profile
-        profileRepository.save(existingProfile);
-        serviceProviderProfileRepository.save(existingServiceProviderProfile);
-    }
-
 }

@@ -41,8 +41,6 @@ public class ProfileResponse extends ResponseObject {
             return null;
         }
 
-        if (profile.isServiceProvider())
-            return ServiceProviderProfileResponse.convert(profile.getServiceProviderProfile());
         ProfileResponse.ProfileResponseBuilder<?, ?> builder = ProfileResponse.builder()
                 .id(profile.getId().toString())
                 .user(UserResponse.convert(profile.getUser()))
