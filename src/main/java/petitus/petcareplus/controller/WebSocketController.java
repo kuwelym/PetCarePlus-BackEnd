@@ -10,6 +10,7 @@ import petitus.petcareplus.dto.request.chat.*;
 import petitus.petcareplus.dto.response.chat.ChatMessageResponse;
 import petitus.petcareplus.dto.response.chat.ImageUploadResponse;
 import petitus.petcareplus.service.ChatService;
+import petitus.petcareplus.service.CipherService;
 import petitus.petcareplus.service.CloudinaryService;
 import petitus.petcareplus.service.WebSocketService;
 
@@ -26,6 +27,7 @@ public class WebSocketController {
     private final WebSocketService webSocketService;
     private final ChatService chatService;
     private final CloudinaryService cloudinaryService;
+    private final CipherService cipherService;
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(
@@ -220,8 +222,17 @@ public class WebSocketController {
     ) {
         try {
             UUID userId = UUID.fromString(principal.getName());
-            String publicId = request.get("publicId");
+            String encryptedPublicId = request.get("publicId");
             String messageId = request.get("messageId");
+
+            // Decrypt the publicId before using it for Cloudinary operations
+            String publicId;
+            try {
+                publicId = cipherService.decrypt(encryptedPublicId);
+            } catch (Exception e) {
+                log.error("Failed to decrypt publicId for deletion: {}", e.getMessage());
+                return;
+            }
 
             // Delete from Cloudinary
             Map<String, Object> deleteResult = cloudinaryService.deleteImage(publicId);

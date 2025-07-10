@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class ConversationService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserService userService;
+    private final CipherService cipherService;
 
     /**
      * Get all conversations for a user with pagination
@@ -112,7 +113,14 @@ public class ConversationService {
                     }
 
                     // Format last message based on type
-                    String displayMessage = lastMessage.getDisplayContent();
+                    String displayMessage;
+                    try {
+                        // Decrypt the content before displaying
+                        displayMessage = cipherService.decrypt(lastMessage.getContent());
+                    } catch (Exception e) {
+                        log.warn("Failed to decrypt last message content for conversation with user {}: {}", userId, e.getMessage());
+                        displayMessage = "[Encrypted message]";
+                    }
                     
                     return ConversationResponse.builder()
                             .userId(userId)

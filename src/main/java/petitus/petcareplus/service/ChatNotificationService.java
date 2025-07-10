@@ -22,16 +22,26 @@ public class ChatNotificationService {
     private final FcmTokenService fcmTokenService;
     private final FirebaseMessagingService firebaseMessagingService;
     private final ActiveChatService activeChatService;
+    private final CipherService cipherService;
 
     /**
      * Create and send internal notification for new chat message
      */
     public void createNotification(ChatMessage chatMessage, UUID senderId) {
+        // Decrypt the message content for notification
+        String decryptedContent;
+        try {
+            decryptedContent = cipherService.decrypt(chatMessage.getContent());
+        } catch (Exception e) {
+            log.warn("Failed to decrypt message content for notification: {}", e.getMessage());
+            decryptedContent = "New message"; // Fallback text
+        }
+        
         NotificationRequest notificationRequest = NotificationRequest.builder()
                 .userIdReceive(chatMessage.getRecipientId())
                 .type(Notifications.CHAT)
                 .title("New Message")
-                .message(chatMessage.getContent())
+                .message(decryptedContent)
                 .relatedId(chatMessage.getId())
                 .build();
 
@@ -57,7 +67,15 @@ public class ChatNotificationService {
         List<String> receiverTokens = fcmTokenService.getUserTokens(chatMessage.getRecipientId());
         if (!receiverTokens.isEmpty()) {
             String title = "New message from " + sender.getFullName();
-            String body = chatMessage.getContent();
+            
+            // Decrypt the message content for FCM notification
+            String body;
+            try {
+                body = cipherService.decrypt(chatMessage.getContent());
+            } catch (Exception e) {
+                log.warn("Failed to decrypt message content for FCM notification: {}", e.getMessage());
+                body = "New message"; // Fallback text
+            }
 
             Map<String, String> data = createFcmNotificationData(
                     chatMessage.getId().toString(),
