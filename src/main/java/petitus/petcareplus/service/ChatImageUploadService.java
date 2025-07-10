@@ -30,6 +30,8 @@ public class ChatImageUploadService {
     private final ChatMessageRepository chatMessageRepository;
     private final CloudinaryService cloudinaryService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CipherService cipherService;
+    private final ChatMessageDecryptionUtil decryptionUtil;
 
     /**
      * Save pending image message (optimistic UI approach)
@@ -43,17 +45,34 @@ public class ChatImageUploadService {
             chatImageMessage.setRecipientId(imageUploadResponse.getRecipientId());
             chatImageMessage.setCreatedAt(LocalDateTime.now());
             chatImageMessage.setIsRead(false);
-            chatImageMessage.setCaption(imageUploadResponse.getCaption());
             
-            // Set content for compatibility
+            // Encrypt the caption if it exists
+            String encryptedCaption = null;
+            if (imageUploadResponse.getCaption() != null && !imageUploadResponse.getCaption().trim().isEmpty()) {
+                encryptedCaption = cipherService.encrypt(imageUploadResponse.getCaption());
+            }
+            chatImageMessage.setCaption(encryptedCaption);
+            
+            // Set content for compatibility - encrypt it as well
             String content = (imageUploadResponse.getCaption() != null && !imageUploadResponse.getCaption().trim().isEmpty()) 
                     ? imageUploadResponse.getCaption() 
-                    : "Image";
-            chatImageMessage.setContent(content);
+                    : "📷 Image";
+            String encryptedContent = cipherService.encrypt(content);
+            chatImageMessage.setContent(encryptedContent);
             
-            // Set image fields with temporary data
-            chatImageMessage.setImageUrl(imageUploadResponse.getImageUrl());
-            chatImageMessage.setPublicId(imageUploadResponse.getPublicId());
+            // Set image fields with temporary data - encrypt URLs
+            String encryptedImageUrl = null;
+            if (imageUploadResponse.getImageUrl() != null) {
+                encryptedImageUrl = cipherService.encrypt(imageUploadResponse.getImageUrl());
+            }
+            chatImageMessage.setImageUrl(encryptedImageUrl);
+            
+            // Encrypt publicId before saving
+            String encryptedPublicId = null;
+            if (imageUploadResponse.getPublicId() != null) {
+                encryptedPublicId = cipherService.encrypt(imageUploadResponse.getPublicId());
+            }
+            chatImageMessage.setPublicId(encryptedPublicId);
             chatImageMessage.setImageName(imageUploadResponse.getImageName());
             chatImageMessage.setMimeType(imageUploadResponse.getMimeType());
             chatImageMessage.setFileSize(imageUploadResponse.getFileSize());
@@ -64,7 +83,8 @@ public class ChatImageUploadService {
             // Save to database
             ChatImageMessage savedMessage = chatImageMessageRepository.save(chatImageMessage);
             
-            return ChatMessageResponse.from(savedMessage);
+            // Return response with decrypted content for immediate display
+            return decryptionUtil.createDecryptedImageMessageResponse(savedMessage);
             
         } catch (Exception e) {
             log.error("Error saving pending image message", e);
@@ -162,25 +182,53 @@ public class ChatImageUploadService {
     private void updateMessageWithUploadResults(ChatImageMessage chatImageMessage, Map<String, Object> uploadResult, 
                                                 ImageUploadResponse originalResponse, UUID messageId) {
         try {
-            // Update with actual Cloudinary data
-            chatImageMessage.setImageUrl((String) uploadResult.get("secure_url"));
-            chatImageMessage.setPublicId((String) uploadResult.get("public_id"));
+            // Update with actual Cloudinary data - encrypt all URLs
+            String imageUrl = (String) uploadResult.get("secure_url");
+            String encryptedImageUrl = cipherService.encrypt(imageUrl);
+            chatImageMessage.setImageUrl(encryptedImageUrl);
+            
+            // Encrypt publicId before saving
+            String publicId = (String) uploadResult.get("public_id");
+            String encryptedPublicId = cipherService.encrypt(publicId);
+            chatImageMessage.setPublicId(encryptedPublicId);
             chatImageMessage.setFileSize(((Number) uploadResult.get("bytes")).longValue());
             chatImageMessage.setWidth((Integer) uploadResult.get("width"));
             chatImageMessage.setHeight((Integer) uploadResult.get("height"));
             chatImageMessage.setUploadStatus(petitus.petcareplus.model.UploadStatus.COMPLETED);
             
-            // Generate different sized URLs
-            String publicId = (String) uploadResult.get("public_id");
-            chatImageMessage.setThumbnailUrl(cloudinaryService.generateOptimizedUrl(publicId, 150, 150));
-            chatImageMessage.setMediumUrl(cloudinaryService.generateOptimizedUrl(publicId, 400, 400));
-            chatImageMessage.setLargeUrl(cloudinaryService.generateOptimizedUrl(publicId, 800, 800));
+            // Generate different sized URLs using the unencrypted publicId and encrypt them
+            String thumbnailUrl = cloudinaryService.generateOptimizedUrl(publicId, 150, 150);
+            String mediumUrl = cloudinaryService.generateOptimizedUrl(publicId, 400, 400);
+            String largeUrl = cloudinaryService.generateOptimizedUrl(publicId, 800, 800);
+            
+            chatImageMessage.setThumbnailUrl(cipherService.encrypt(thumbnailUrl));
+            chatImageMessage.setMediumUrl(cipherService.encrypt(mediumUrl));
+            chatImageMessage.setLargeUrl(cipherService.encrypt(largeUrl));
             
             // Save updated message
             ChatImageMessage updatedMessage = chatImageMessageRepository.save(chatImageMessage);
             
-            // Create updated response
-            ImageUploadResponse completedResponse = ImageUploadResponse.from(updatedMessage, originalResponse);
+            // Create updated response with decrypted URLs for client notification
+            ChatMessageResponse decryptedChatResponse = decryptionUtil.createDecryptedImageMessageResponse(updatedMessage);
+            ImageUploadResponse completedResponse = ImageUploadResponse.builder()
+                    .id(updatedMessage.getId())
+                    .senderId(updatedMessage.getSenderId())
+                    .recipientId(updatedMessage.getRecipientId())
+                    .caption(decryptedChatResponse.getCaption())
+                    .imageUrl(decryptedChatResponse.getImageUrl())
+                    .publicId(decryptedChatResponse.getPublicId())
+                    .imageName(updatedMessage.getImageName())
+                    .mimeType(updatedMessage.getMimeType())
+                    .fileSize(updatedMessage.getFileSize())
+                    .width(updatedMessage.getWidth())
+                    .height(updatedMessage.getHeight())
+                    .thumbnailUrl(decryptedChatResponse.getThumbnailUrl())
+                    .mediumUrl(decryptedChatResponse.getMediumUrl())
+                    .largeUrl(decryptedChatResponse.getLargeUrl())
+                    .uploadedAt(originalResponse.getUploadedAt())
+                    .isRead(updatedMessage.getIsRead())
+                    .uploadStatus(updatedMessage.getUploadStatus())
+                    .build();
             
             // Notify users of completion
             publishImageUploadCompletedEvent(completedResponse, messageId);

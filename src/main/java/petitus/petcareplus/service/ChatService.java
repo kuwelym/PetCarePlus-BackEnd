@@ -31,6 +31,7 @@ public class ChatService {
     private final ChatNotificationService chatNotificationService;
     private final ChatImageUploadService chatImageUploadService;
     private final ConversationService conversationService;
+    private final CipherService cipherService;
 
     @Transactional
     public ChatMessageResponse sendMessage(ChatMessageRequest request) {
@@ -53,24 +54,140 @@ public class ChatService {
 
         chatNotificationService.sendFcmNotification(chatMessage, sender);
 
-        return ChatMessageResponse.from(chatMessage);
+        return createDecryptedResponse(chatMessage);
     }
 
     private ChatMessage createAndSaveChatMessage(ChatMessageRequest request, UUID senderId) {
+        // Encrypt the message content before saving
+        String encryptedContent = cipherService.encrypt(request.getContent());
+        
         ChatMessage chatMessage = ChatMessage.builder()
                 .senderId(senderId)
                 .recipientId(request.getRecipientId())
-                .content(request.getContent())
+                .content(encryptedContent)
                 .isRead(false)
                 .build();
 
         return chatMessageRepository.save(chatMessage);
     }
 
+    /**
+     * Create a ChatMessageResponse with decrypted content
+     */
+    private ChatMessageResponse createDecryptedResponse(ChatMessage message) {
+        // Decrypt the content before creating the response
+        String decryptedContent;
+        try {
+            decryptedContent = cipherService.decrypt(message.getContent());
+        } catch (Exception e) {
+            log.warn("Failed to decrypt message content for message {}: {}", message.getId(), e.getMessage());
+            decryptedContent = "[Decryption failed]";
+        }
+        
+        // Handle different message types
+        if (message instanceof ChatImageMessage imageMessage) {
+            // For image messages, also decrypt the caption if it exists
+            String decryptedCaption = null;
+            if (imageMessage.getCaption() != null && !imageMessage.getCaption().trim().isEmpty()) {
+                try {
+                    decryptedCaption = cipherService.decrypt(imageMessage.getCaption());
+                } catch (Exception e) {
+                    log.warn("Failed to decrypt image caption for message {}: {}", message.getId(), e.getMessage());
+                    decryptedCaption = "[Caption decryption failed]";
+                }
+            }
+            
+            // Decrypt all image URLs
+            String decryptedImageUrl = null;
+            String decryptedThumbnailUrl = null;
+            String decryptedMediumUrl = null;
+            String decryptedLargeUrl = null;
+            
+            try {
+                if (imageMessage.getImageUrl() != null) {
+                    decryptedImageUrl = cipherService.decrypt(imageMessage.getImageUrl());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to decrypt image URL for message {}: {}", message.getId(), e.getMessage());
+                decryptedImageUrl = null;
+            }
+            
+            try {
+                if (imageMessage.getThumbnailUrl() != null) {
+                    decryptedThumbnailUrl = cipherService.decrypt(imageMessage.getThumbnailUrl());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to decrypt thumbnail URL for message {}: {}", message.getId(), e.getMessage());
+                decryptedThumbnailUrl = null;
+            }
+            
+            try {
+                if (imageMessage.getMediumUrl() != null) {
+                    decryptedMediumUrl = cipherService.decrypt(imageMessage.getMediumUrl());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to decrypt medium URL for message {}: {}", message.getId(), e.getMessage());
+                decryptedMediumUrl = null;
+            }
+            
+            try {
+                if (imageMessage.getLargeUrl() != null) {
+                    decryptedLargeUrl = cipherService.decrypt(imageMessage.getLargeUrl());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to decrypt large URL for message {}: {}", message.getId(), e.getMessage());
+                decryptedLargeUrl = null;
+            }
+            
+            // Create a copy of the image message with decrypted content
+            ChatImageMessage decryptedImageMessage = new ChatImageMessage();
+            decryptedImageMessage.setSenderId(imageMessage.getSenderId());
+            decryptedImageMessage.setRecipientId(imageMessage.getRecipientId());
+            decryptedImageMessage.setIsRead(imageMessage.getIsRead());
+            decryptedImageMessage.setUploadStatus(imageMessage.getUploadStatus());
+            decryptedImageMessage.setReadAt(imageMessage.getReadAt());
+            decryptedImageMessage.setCaption(decryptedCaption);
+            decryptedImageMessage.setImageUrl(decryptedImageUrl);
+            decryptedImageMessage.setPublicId(imageMessage.getPublicId());
+            decryptedImageMessage.setImageName(imageMessage.getImageName());
+            decryptedImageMessage.setMimeType(imageMessage.getMimeType());
+            decryptedImageMessage.setFileSize(imageMessage.getFileSize());
+            decryptedImageMessage.setWidth(imageMessage.getWidth());
+            decryptedImageMessage.setHeight(imageMessage.getHeight());
+            decryptedImageMessage.setThumbnailUrl(decryptedThumbnailUrl);
+            decryptedImageMessage.setMediumUrl(decryptedMediumUrl);
+            decryptedImageMessage.setLargeUrl(decryptedLargeUrl);
+            
+            // Copy the ID and timestamps from the original message
+            decryptedImageMessage.setId(imageMessage.getId());
+            decryptedImageMessage.setCreatedAt(imageMessage.getCreatedAt());
+            decryptedImageMessage.setUpdatedAt(imageMessage.getUpdatedAt());
+            
+            return ChatMessageResponse.from(decryptedImageMessage);
+        } else {
+            // For regular text messages
+            ChatMessage decryptedMessage = ChatMessage.builder()
+                    .senderId(message.getSenderId())
+                    .recipientId(message.getRecipientId())
+                    .content(decryptedContent)
+                    .isRead(message.getIsRead())
+                    .uploadStatus(message.getUploadStatus())
+                    .readAt(message.getReadAt())
+                    .build();
+            
+            // Copy the ID and timestamps from the original message
+            decryptedMessage.setId(message.getId());
+            decryptedMessage.setCreatedAt(message.getCreatedAt());
+            decryptedMessage.setUpdatedAt(message.getUpdatedAt());
+            
+            return ChatMessageResponse.from(decryptedMessage);
+        }
+    }
+
     public Page<ChatMessageResponse> getConversation(UUID otherUserId, Pageable pageable) {
         UUID currentUserId = userService.getCurrentUserId();
-        return chatMessageRepository.findConversationBetweenUsers(currentUserId, otherUserId, pageable)
-                .map(ChatMessageResponse::from);
+        Page<ChatMessage> a = chatMessageRepository.findConversationBetweenUsers(currentUserId, otherUserId, pageable);
+                return a.map(this::createDecryptedResponse);
     }
 
     public List<ChatMessageResponse> getConversationWithKeyset(UUID otherUserId, LocalDateTime lastMessageTime, int limit) {
@@ -93,7 +210,7 @@ public class ChatService {
         }
         
         return messagesPage.getContent().stream()
-                .map(ChatMessageResponse::from)
+                .map(this::createDecryptedResponse)
                 .toList();
     }
 

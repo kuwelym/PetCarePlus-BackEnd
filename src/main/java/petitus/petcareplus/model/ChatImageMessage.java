@@ -49,7 +49,7 @@ public class ChatImageMessage extends ChatMessage {
         if (caption != null && !caption.trim().isEmpty()) {
             return caption;
         }
-        return "📷 Image"; // Default content for database NOT NULL constraint
+        return super.getContent();
     }
 
 }

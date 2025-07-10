@@ -99,6 +99,10 @@ public class WebSocketService {
             UUID otherUserId = UUID.fromString(readReceiptRequest.getSenderId());
             List<UUID> messageIds = chatService.markMessageAsRead(readerId, otherUserId);
 
+            if (messageIds.isEmpty()) {
+                return;
+            }
+
             ReadReceiptResponse readReceiptResponse = new ReadReceiptResponse(
                     messageIds,
                     readerId.toString(),
