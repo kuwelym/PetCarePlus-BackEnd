@@ -95,6 +95,7 @@ public class ServiceProviderProfileService {
                 .profile(existingProfile)
                 .businessName(serviceProviderProfileRequest.getBusinessName())
                 .businessBio(serviceProviderProfileRequest.getBusinessBio())
+                .businessAddress(serviceProviderProfileRequest.getBusinessAddress())
                 .contactEmail(serviceProviderProfileRequest.getContactEmail())
                 .contactPhone(serviceProviderProfileRequest.getContactPhone())
                 .availableTime(serviceProviderProfileRequest.getAvailableTime())
@@ -134,6 +135,7 @@ public class ServiceProviderProfileService {
         existingServiceProviderProfile.setImageUrls(serviceProviderProfileRequest.getImageUrls());
         existingServiceProviderProfile.setBusinessName(serviceProviderProfileRequest.getBusinessName());
         existingServiceProviderProfile.setBusinessBio(serviceProviderProfileRequest.getBusinessBio());
+        existingServiceProviderProfile.setBusinessAddress(serviceProviderProfileRequest.getBusinessAddress());
 
         // Save the service provider profile
         serviceProviderProfileRepository.save(existingServiceProviderProfile);

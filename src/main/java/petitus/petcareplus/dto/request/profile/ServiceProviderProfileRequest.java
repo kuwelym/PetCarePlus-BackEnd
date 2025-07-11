@@ -17,6 +17,8 @@ public class ServiceProviderProfileRequest {
 
     private String businessBio;
 
+    private String businessAddress;
+
     private String contactPhone;
 
     private String contactEmail;

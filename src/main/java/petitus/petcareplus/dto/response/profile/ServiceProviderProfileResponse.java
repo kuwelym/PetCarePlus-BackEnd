@@ -22,6 +22,8 @@ public class ServiceProviderProfileResponse {
 
     private String businessBio;
 
+    private String businessAddress;
+
     private String contactPhone;
 
     private String contactEmail;
@@ -46,6 +48,7 @@ public class ServiceProviderProfileResponse {
                 .id(serviceProviderProfile.getId().toString())
                 .businessName(serviceProviderProfile.getBusinessName())
                 .businessBio(serviceProviderProfile.getBusinessBio())
+                .businessAddress(serviceProviderProfile.getBusinessAddress())
                 .contactPhone(serviceProviderProfile.getContactPhone())
                 .contactEmail(serviceProviderProfile.getContactEmail())
                 .availableTime(serviceProviderProfile.getAvailableTime())

@@ -33,6 +33,9 @@ public class ServiceProviderProfile extends AbstractBaseEntity{
 
     private String businessBio;
 
+    @Column(name = "business_address")
+    private String businessAddress;
+
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;
 

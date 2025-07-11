@@ -82,6 +82,12 @@ public final class ServiceProviderProfileFilterSpecification implements Specific
             );
         }
 
+        if (criteria.getBusinessAddress() != null) {
+            predicates.add(
+                    builder.like(builder.lower(root.get("businessAddress")), "%" + criteria.getBusinessAddress().toLowerCase() + "%")
+            );
+        }
+
         if (criteria.getCreatedAtStart() != null) {
             predicates.add(
                     builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart())
