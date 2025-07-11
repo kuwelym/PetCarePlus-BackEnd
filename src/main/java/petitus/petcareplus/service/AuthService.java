@@ -2,36 +2,32 @@ package petitus.petcareplus.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import petitus.petcareplus.dto.request.auth.RegisterRequest;
-import petitus.petcareplus.dto.request.auth.ChangePasswordRequest;
-import petitus.petcareplus.dto.request.auth.ForgotPasswordRequest;
-import petitus.petcareplus.dto.request.auth.ResetPasswordRequest;
-import petitus.petcareplus.dto.request.auth.VerifyPasswordRequest;
+import petitus.petcareplus.dto.request.auth.*;
 import petitus.petcareplus.dto.response.auth.TokenResponse;
+import petitus.petcareplus.event.PasswordResetSendEvent;
 import petitus.petcareplus.exceptions.RefreshTokenExpireException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.JwtToken;
+import petitus.petcareplus.model.PasswordResetToken;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.UserRepository;
 import petitus.petcareplus.security.jwt.JwtTokenProvider;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.utils.Constants;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.ApplicationEventPublisher;
-import petitus.petcareplus.event.PasswordResetSendEvent;
-import petitus.petcareplus.model.PasswordResetToken;
 
 import java.util.UUID;
 
@@ -61,25 +57,6 @@ public class AuthService {
     private final PasswordResetTokenService passwordResetTokenService;
     private final ApplicationEventPublisher eventPublisher;
 
-    @Transactional
-    private User createUser(RegisterRequest request) throws BindException {
-        BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
-        userRepository.findByEmail(request.getEmail())
-                .ifPresent(user -> bindingResult.addError(new FieldError(bindingResult.getObjectName(), "email",
-                        messageSourceService.get("unique_email"))));
-
-        if (bindingResult.hasErrors()) {
-            throw new BindException(bindingResult);
-        }
-
-        return User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .name(request.getName())
-                .lastName(request.getLastName())
-                .build();
-    }
-
     public TokenResponse login(String email, String password) {
         String badCredentialsMessage = messageSourceService.get("bad_credentials");
         User user = userRepository.findByEmail(email)
@@ -92,7 +69,11 @@ public class AuthService {
                 password);
         try {
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
-            return generateTokens(((JwtUserDetails) authentication.getPrincipal()).getId());
+
+            // Determine if user is a service provider
+            boolean isServiceProvider = user.getProfile() != null && user.getProfile().isServiceProvider();
+
+            return generateTokens(((JwtUserDetails) authentication.getPrincipal()).getId(), isServiceProvider);
 
         } catch (Exception e) {
             throw new BadCredentialsException(badCredentialsMessage);
@@ -101,7 +82,24 @@ public class AuthService {
 
     @Transactional
     public void register(RegisterRequest request) throws BindException {
-        User user = createUser(request);
+        // Validate email uniqueness
+        BindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
+        userRepository.findByEmail(request.getEmail())
+                .ifPresent(user -> bindingResult.addError(new FieldError(bindingResult.getObjectName(), "email",
+                        messageSourceService.get("unique_email"))));
+
+        if (bindingResult.hasErrors()) {
+            throw new BindException(bindingResult);
+        }
+
+        // Create user
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .name(request.getName())
+                .lastName(request.getLastName())
+                .build();
+
         user.setRole(roleService.findByName(Constants.RoleEnum.USER));
 
         User savedUser = userRepository.save(user);
@@ -110,12 +108,13 @@ public class AuthService {
 
         userService.emailVerificationEventPublisher(savedUser);
 
-        generateTokens(savedUser.getId());
+        // New users are not service providers by default
+        generateTokens(savedUser.getId(), false);
     }
 
     /**
      * Refreshes the access token, restrains the refresh token
-     * 
+     *
      * @param refreshToken the refresh token
      */
     public TokenResponse refresh(final String refreshToken) {
@@ -127,6 +126,11 @@ public class AuthService {
         UUID userId = UUID.fromString(jwtTokenProvider.getUserIdFromToken(refreshToken));
         JwtToken oldToken = jwtTokenService.findByUserIdAndRefreshToken(userId, refreshToken);
 
+        // Get user to determine service provider status
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("user_not_found")));
+        boolean isServiceProvider = user.getProfile() != null && user.getProfile().isServiceProvider();
+
         String newAccessToken = jwtTokenProvider.generateToken(userId.toString());
 
         oldToken.setToken(newAccessToken);
@@ -135,6 +139,7 @@ public class AuthService {
         return TokenResponse.builder()
                 .token(newAccessToken)
                 .refreshToken(refreshToken)
+                .isServiceProvider(isServiceProvider)
                 .expiresIn(
                         TokenResponse.TokenExpirationResponse.builder()
                                 .token(jwtTokenProvider.getTokenExpiresIn())
@@ -151,7 +156,7 @@ public class AuthService {
         jwtTokenService.delete(jwtToken);
     }
 
-    public TokenResponse generateTokens(final UUID id) {
+    public TokenResponse generateTokens(final UUID id, final boolean isServiceProvider) {
         String token = jwtTokenProvider.generateToken(id.toString());
         String refreshToken = jwtTokenProvider.generateRefreshToken(id.toString());
 
@@ -166,6 +171,7 @@ public class AuthService {
         return TokenResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken)
+                .isServiceProvider(isServiceProvider)
                 .expiresIn(
                         TokenResponse.TokenExpirationResponse.builder()
                                 .token(jwtTokenProvider.getTokenExpiresIn())

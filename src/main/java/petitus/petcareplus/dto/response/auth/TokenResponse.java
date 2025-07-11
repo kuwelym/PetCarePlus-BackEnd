@@ -1,5 +1,7 @@
 package petitus.petcareplus.dto.response.auth;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +16,9 @@ public class TokenResponse{
     private String refreshToken;
 
     private TokenExpirationResponse expiresIn;
+
+    @JsonProperty("isServiceProvider")
+    private boolean isServiceProvider;
 
     @Setter
     @Getter
