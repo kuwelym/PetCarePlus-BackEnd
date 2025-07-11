@@ -17,6 +17,8 @@ public final class ServiceProviderProfileCriteria {
 
     private String location;
 
+    private String businessAddress;
+
     private Integer rating;
 
     private List<String> skills;

@@ -28,7 +28,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class ServiceProviderProfileController extends BaseController {
 
-    private final String[] SORT_COLUMNS = new String[]{"id", "rating", "businessName", "createdAt", "updatedAt", "deletedAt"};
+    private final String[] SORT_COLUMNS = new String[]{"id", "rating", "businessName", "businessAddress", "createdAt", "updatedAt", "deletedAt"};
     private final ServiceProviderProfileService serviceProviderProfileService;
     private final MessageSourceService messageSourceService;
 
@@ -67,6 +67,8 @@ public class ServiceProviderProfileController extends BaseController {
 
             @RequestParam(required = false) final String location,
 
+            @RequestParam(required = false) final String businessAddress,
+
             @RequestParam(required = false) final Integer rating,
 
             @RequestParam(required = false) final List<String> skills,
@@ -99,6 +101,7 @@ public class ServiceProviderProfileController extends BaseController {
                 ServiceProviderProfileCriteria.builder()
                         .query(query)
                         .location(location)
+                        .businessAddress(businessAddress)
                         .rating(rating)
                         .skills(skills)
                         .availableAtStart(availableAtStart)
