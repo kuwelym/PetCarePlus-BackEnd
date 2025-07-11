@@ -97,10 +97,6 @@ public class UserService implements UserDetailsService {
         user.setName(request.getName());
         user.setLastName(request.getLastName());
 
-        if (StringUtils.hasText(request.getPassword())) {
-            user.setPassword(request.getPassword());
-        }
-
         if (request.getRole() != null) {
             user.setRole(roleService.findByName(Constants.RoleEnum.valueOf(request.getRole().toUpperCase())));
         }
