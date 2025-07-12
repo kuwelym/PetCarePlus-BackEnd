@@ -30,6 +30,8 @@ public class ServiceProviderProfileResponse {
 
     private double rating;
 
+    private int reviews;
+
     private Map<String, Object> availableTime;
 
     private Set<String> imageUrls;
@@ -53,6 +55,29 @@ public class ServiceProviderProfileResponse {
                 .contactEmail(serviceProviderProfile.getContactEmail())
                 .availableTime(serviceProviderProfile.getAvailableTime())
                 .rating(serviceProviderProfile.getRating())
+                .reviews(0) // Default to 0 reviews for backward compatibility
+                .imageUrls(serviceProviderProfile.getImageUrls())
+                .createdAt(profile.getCreatedAt())
+                .updatedAt(profile.getUpdatedAt())
+                .deletedAt(profile.getDeletedAt());
+
+        return builder.build();
+    }
+
+    public static ServiceProviderProfileResponse convert(ServiceProviderProfile serviceProviderProfile, int reviewCount) {
+        Profile profile = serviceProviderProfile.getProfile();
+        ServiceProviderProfileResponse.ServiceProviderProfileResponseBuilder<?, ?> builder = ServiceProviderProfileResponse
+                .builder()
+                .profileId(profile.getId().toString())
+                .id(serviceProviderProfile.getId().toString())
+                .businessName(serviceProviderProfile.getBusinessName())
+                .businessBio(serviceProviderProfile.getBusinessBio())
+                .businessAddress(serviceProviderProfile.getBusinessAddress())
+                .contactPhone(serviceProviderProfile.getContactPhone())
+                .contactEmail(serviceProviderProfile.getContactEmail())
+                .availableTime(serviceProviderProfile.getAvailableTime())
+                .rating(serviceProviderProfile.getRating())
+                .reviews(reviewCount)
                 .imageUrls(serviceProviderProfile.getImageUrls())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())

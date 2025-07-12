@@ -72,4 +72,8 @@ public interface ServiceReviewRepository
         boolean hasUserReviewedProviderService(
                         @Param("userId") UUID userId,
                         @Param("providerServiceId") UUID providerServiceId);
+
+        // Count total reviews for a provider
+        @Query("SELECT COUNT(sr) FROM ServiceReview sr WHERE sr.deletedAt IS NULL AND sr.providerService.provider.id = :providerId")
+        Long countReviewsForProvider(@Param("providerId") UUID providerId);
 }
