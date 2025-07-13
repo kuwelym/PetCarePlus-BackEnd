@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -220,6 +219,7 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
+    @Transactional(readOnly = true)
     public BookingResponse getBooking(UUID userId, UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("booking_not_found")));
@@ -237,23 +237,21 @@ public class BookingService {
         return mapToBookingResponse(booking);
     }
 
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getUserBookings(UUID userId, PaginationCriteria pagination) {
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
         Page<Booking> bookings = bookingRepository.findAllByUserId(userId, pageRequest);
         return bookings.map(this::mapToBookingResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getProviderBookings(UUID providerId, PaginationCriteria pagination) {
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
         Page<Booking> bookings = bookingRepository.findAllByProviderId(providerId, pageRequest);
         return bookings.map(this::mapToBookingResponse);
     }
 
-    public Page<BookingResponse> getProviderBookings(UUID providerId, Pageable pageable) {
-        return bookingRepository.findAllByProviderId(providerId, pageable)
-                .map(this::mapToBookingResponse);
-    }
-
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getUserBookingsByStatus(UUID userId, BookingStatus status,
             PaginationCriteria pagination) {
         try {
@@ -266,6 +264,7 @@ public class BookingService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getProviderBookingsByStatus(UUID providerId, BookingStatus status,
             PaginationCriteria pagination) {
         try {
@@ -277,6 +276,7 @@ public class BookingService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getProviderBookingsForDateRange(UUID providerId, LocalDateTime startDate,
             LocalDateTime endDate, PaginationCriteria pagination) {
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
@@ -304,57 +304,6 @@ public class BookingService {
         }
 
     }
-
-    // private void validateStatusTransition(BookingStatus currentStatus,
-    // BookingStatus newStatus, boolean isProvider,
-    // boolean isUser) {
-    // // Define valid transitions
-    // Set<BookingStatus> validTransitions = new HashSet<>();
-
-    // switch (currentStatus) {
-    // case PENDING:
-    // if (isProvider) {
-    // validTransitions.add(BookingStatus.ACCEPTED);
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // if (isUser) {
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // break;
-    // case ACCEPTED:
-    // if (isProvider) {
-    // validTransitions.add(BookingStatus.ONGOING);
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // if (isUser) {
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // break;
-    // case ONGOING:
-    // if (isProvider) {
-    // validTransitions.add(BookingStatus.SERVICE_DONE);
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // break;
-    // case SERVICE_DONE:
-    // if (isUser) {
-    // validTransitions.add(BookingStatus.COMPLETED);
-    // validTransitions.add(BookingStatus.CANCELLED);
-    // }
-    // break;
-    // case COMPLETED:
-    // case CANCELLED:
-    // // No transitions allowed from these terminal states
-    // validTransitions = Collections.emptySet();
-    // break;
-    // }
-
-    // if (!validTransitions.contains(newStatus)) {
-    // throw new
-    // BadRequestException(messageSourceService.get("invalid_status_transition",
-    // new Object[] { currentStatus.name(), newStatus.name() }));
-    // }
-    // }
 
     private void validateStatusTransition(BookingStatus currentStatus, BookingStatus newStatus, boolean isProvider,
             boolean isUser) {
@@ -566,6 +515,7 @@ public class BookingService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public Page<AdminBookingResponse> getAllBookingsForAdmin(PaginationCriteria pagination,
             BookingCriteria criteria) {
 
@@ -576,6 +526,7 @@ public class BookingService {
         return bookings.map(this::mapToAdminBookingResponse);
     }
 
+    @Transactional(readOnly = true)
     public AdminBookingResponse getBookingByIdForAdmin(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException(messageSourceService.get("booking_not_found")));
