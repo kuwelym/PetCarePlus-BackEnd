@@ -3,7 +3,9 @@ package petitus.petcareplus.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +15,13 @@ import petitus.petcareplus.dto.response.wallet.WithdrawalResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.User;
+import petitus.petcareplus.model.spec.WithdrawalSpecification;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.WithdrawalCriteria;
 import petitus.petcareplus.model.wallet.Wallet;
 import petitus.petcareplus.model.wallet.Withdrawal;
 import petitus.petcareplus.repository.WithdrawalRepository;
+import petitus.petcareplus.utils.PageRequestBuilder;
 import petitus.petcareplus.utils.enums.TransactionStatus;
 import petitus.petcareplus.utils.enums.TransactionType;
 import petitus.petcareplus.utils.enums.WithdrawalStatus;
@@ -108,8 +114,11 @@ public class WithdrawalService {
                 .map(this::mapToWithdrawalResponse);
     }
 
-    public Page<WithdrawalResponse> getAllWithdrawals(Pageable pageable) {
-        return withdrawalRepository.findAllByOrderByCreatedAtDesc(pageable)
+    public Page<WithdrawalResponse> getAllWithdrawals(PaginationCriteria pagination, WithdrawalCriteria criteria) {
+        Specification<Withdrawal> specification = new WithdrawalSpecification(criteria);
+        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        Page<Withdrawal> withdrawals = withdrawalRepository.findAll(specification, pageRequest);
+        return withdrawals
                 .map(this::mapToWithdrawalResponse);
     }
 
