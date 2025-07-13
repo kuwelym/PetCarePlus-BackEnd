@@ -227,6 +227,16 @@ public class ServiceReviewService {
         return averageRating != null ? averageRating : 0.0;
     }
 
+    public Long getProviderReviewCount(UUID providerId) {
+        // Check if provider exists
+        if (!userRepository.existsById(providerId)) {
+            throw new ResourceNotFoundException(messageSourceService.get("provider_not_found"));
+        }
+
+        Long reviewCount = serviceReviewRepository.countReviewsForProvider(providerId);
+        return reviewCount != null ? reviewCount : 0L;
+    }
+
     @Transactional
     public void updateProviderRating(UUID providerId) {
         Double averageRating = getProviderAverageRating(providerId);

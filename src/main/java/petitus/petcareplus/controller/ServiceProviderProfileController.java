@@ -17,6 +17,7 @@ import petitus.petcareplus.model.spec.criteria.ServiceProviderProfileCriteria;
 import petitus.petcareplus.model.profile.ServiceProviderProfile;
 import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.ServiceProviderProfileService;
+import petitus.petcareplus.service.ServiceReviewService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,8 +29,9 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class ServiceProviderProfileController extends BaseController {
 
-    private final String[] SORT_COLUMNS = new String[]{"id", "rating", "businessName", "businessAddress", "createdAt", "updatedAt", "deletedAt"};
+    private final String[] SORT_COLUMNS = new String[]{"id", "rating", "businessName", "businessAddress", "createdAt", "updatedAt", "deletedAt", "reviews"};
     private final ServiceProviderProfileService serviceProviderProfileService;
+    private final ServiceReviewService serviceReviewService;
     private final MessageSourceService messageSourceService;
 
     @PostMapping
@@ -119,7 +121,11 @@ public class ServiceProviderProfileController extends BaseController {
                         .build());
 
         return ResponseEntity.ok(new ProfilePaginationResponse<>(serviceProviderProfiles, serviceProviderProfiles.getContent().stream()
-                .map(ServiceProviderProfileResponse::convert)
+                .map(profile -> {
+                    UUID providerId = profile.getProfile().getUser().getId();
+                    Long reviewCount = serviceReviewService.getProviderReviewCount(providerId);
+                    return ServiceProviderProfileResponse.convert(profile, reviewCount.intValue());
+                })
                 .toList()));
     }
 
@@ -134,7 +140,9 @@ public class ServiceProviderProfileController extends BaseController {
         if (serviceProviderProfile == null) {
             throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
         }
-        return ResponseEntity.ok(ServiceProviderProfileResponse.convert(serviceProviderProfile));
+        UUID providerId = serviceProviderProfile.getProfile().getUser().getId();
+        Long reviewCount = serviceReviewService.getProviderReviewCount(providerId);
+        return ResponseEntity.ok(ServiceProviderProfileResponse.convert(serviceProviderProfile, reviewCount.intValue()));
     }
 
     @GetMapping("/me")
@@ -148,6 +156,8 @@ public class ServiceProviderProfileController extends BaseController {
         if (serviceProviderProfile == null) {
             throw new RuntimeException(messageSourceService.get("service_provider_profile_not_found"));
         }
-        return ResponseEntity.ok(ServiceProviderProfileResponse.convert(serviceProviderProfile));
+        UUID providerId = serviceProviderProfile.getProfile().getUser().getId();
+        Long reviewCount = serviceReviewService.getProviderReviewCount(providerId);
+        return ResponseEntity.ok(ServiceProviderProfileResponse.convert(serviceProviderProfile, reviewCount.intValue()));
     }
 } 
