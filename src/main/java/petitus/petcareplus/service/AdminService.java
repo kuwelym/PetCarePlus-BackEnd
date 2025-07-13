@@ -76,14 +76,42 @@ public class AdminService {
     }
 
     @Transactional
-    public User toggleUserBlockStatus(String userId, boolean blocked) {
+    public User blockUser(String userId) {
         User user = userService.findById(userId);
 
-        if (blocked) {
-            user.setBlockedAt(LocalDateTime.now());
-        } else {
-            user.setBlockedAt(null);
+        if (user == null) {
+            throw new BadRequestException(messageSourceService.get("user_not_found"));
+
         }
+
+        if (user.getBlockedAt() != null) {
+            throw new BadRequestException(messageSourceService.get("user_already_blocked"));
+        }
+
+        if (user.getEmailVerifiedAt() == null) {
+            throw new BadRequestException(messageSourceService.get("cannot_block_unverified_user"));
+        }
+
+        if (user.getRole().getName().equals(Constants.RoleEnum.ADMIN)) {
+            throw new BadRequestException(messageSourceService.get("cannot_block_admin_user"));
+        }
+        user.setBlockedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User unblockUser(String userId) {
+        User user = userService.findById(userId);
+
+        if (user == null) {
+            throw new BadRequestException(messageSourceService.get("user_not_found"));
+        }
+
+        if (user.getBlockedAt() == null) {
+            throw new BadRequestException(messageSourceService.get("user_already_unblocked"));
+        }
+        user.setBlockedAt(null);
 
         return userRepository.save(user);
     }

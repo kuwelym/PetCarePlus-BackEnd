@@ -65,6 +65,10 @@ public class AuthService {
             throw new BadCredentialsException(messageSourceService.get("email_not_verified"));
         }
 
+        if (user.getBlockedAt() != null) {
+            throw new BadCredentialsException(messageSourceService.get("user_already_blocked"));
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email,
                 password);
         try {

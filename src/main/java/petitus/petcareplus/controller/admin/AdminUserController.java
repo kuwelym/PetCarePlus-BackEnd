@@ -118,14 +118,26 @@ public class AdminUserController extends BaseController {
                 return ResponseEntity.ok(UserResponse.convert(updatedUser));
         }
 
-        @PutMapping("/{id}/block")
-        @Operation(summary = "Block/Unblock user", description = "API để admin block/unblock user")
+        @PatchMapping("/{id}/block")
+        @Operation(summary = "Block user", description = "API để admin block user")
         @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<UserResponse> toggleUserBlockStatus(
+        public ResponseEntity<UserResponse> blockUser(
                         @PathVariable final String id,
-                        @RequestParam final boolean blocked) {
+                        // add reason if needed
+                        @RequestBody(required = false) String reason) {
 
-                User updatedUser = adminService.toggleUserBlockStatus(id, blocked);
+                User updatedUser = adminService.blockUser(id);
+                return ResponseEntity.ok(UserResponse.convert(updatedUser));
+        }
+
+        @PatchMapping("/{id}/unblock")
+        @Operation(summary = "Unblock user", description = "API để admin unblock user")
+        @PreAuthorize("hasAuthority('ADMIN')")
+        public ResponseEntity<UserResponse> unblockUser(
+                        @PathVariable final String id,
+                        @RequestBody(required = false) String reason) {
+
+                User updatedUser = adminService.unblockUser(id);
                 return ResponseEntity.ok(UserResponse.convert(updatedUser));
         }
 }
