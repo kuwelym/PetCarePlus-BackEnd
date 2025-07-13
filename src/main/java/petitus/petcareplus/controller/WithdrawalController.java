@@ -13,6 +13,7 @@ import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.wallet.WithdrawalRequest;
@@ -31,6 +32,7 @@ public class WithdrawalController {
     private final WithdrawalService withdrawalService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Create withdrawal request", description = "Create a new withdrawal request for service provider")
     public ResponseEntity<WithdrawalResponse> createWithdrawalRequest(
             @AuthenticationPrincipal JwtUserDetails userDetails,
@@ -41,6 +43,7 @@ public class WithdrawalController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Get my withdrawals", description = "Get withdrawal history for current provider")
     public ResponseEntity<PaginationResponse<WithdrawalResponse>> getMyWithdrawals(
             @AuthenticationPrincipal JwtUserDetails userDetails,

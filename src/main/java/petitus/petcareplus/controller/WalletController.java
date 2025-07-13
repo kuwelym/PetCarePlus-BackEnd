@@ -2,6 +2,7 @@ package petitus.petcareplus.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ public class WalletController {
     private final WalletService walletService;
 
     @GetMapping("/me")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Get my wallet", description = "Retrieve the wallet details of the current user")
     public ResponseEntity<WalletResponse> getMyWallet(
             @AuthenticationPrincipal JwtUserDetails userDetails) {
@@ -32,6 +34,7 @@ public class WalletController {
     }
 
     @PostMapping("/me")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Create my wallet", description = "Create a wallet for the current user")
     public ResponseEntity<WalletResponse> createMyWallet(
             @AuthenticationPrincipal JwtUserDetails userDetails) {
