@@ -5,15 +5,18 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.response.PaginationResponse;
 import petitus.petcareplus.dto.response.wallet.WithdrawalResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
+import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
+import petitus.petcareplus.model.spec.criteria.WithdrawalCriteria;
 import petitus.petcareplus.service.WithdrawalService;
+import petitus.petcareplus.utils.enums.WithdrawalStatus;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
@@ -30,14 +33,43 @@ public class AdminWithdrawalController {
     @GetMapping
     @Operation(summary = "Get all withdrawals", description = "Get all withdrawal requests with pagination")
     public ResponseEntity<PaginationResponse<WithdrawalResponse>> getAllWithdrawals(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
+            @RequestParam(required = false) WithdrawalStatus status,
+            @RequestParam(required = false) BigDecimal amountFrom,
+            @RequestParam(required = false) BigDecimal amountTo,
+            @RequestParam(required = false) String bankName,
+            @RequestParam(required = false) Boolean isDeleted,
 
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
-        Page<WithdrawalResponse> withdrawals = withdrawalService.getAllWithdrawals(pageRequest);
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sort) {
+
+        PaginationCriteria pagination = PaginationCriteria.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sort(sort)
+                .columns(new String[] { "createdAt", "updatedAt", "amount", "netAmount", "transactionRef" }) // Allowed
+                // sort
+                // fields
+                .build();
+
+        WithdrawalCriteria criteria = WithdrawalCriteria.builder()
+                .status(status)
+                .amountFrom(amountFrom)
+                .amountTo(amountTo)
+                .bankName(bankName)
+                .isDeleted(isDeleted)
+                .build();
+
+        // Lấy Page từ service
+        Page<WithdrawalResponse> pageResult = withdrawalService.getAllWithdrawals(pagination, criteria);
+
+        // Convert sang PaginationResponse
         PaginationResponse<WithdrawalResponse> response = new PaginationResponse<>(
-                withdrawals,
-                withdrawals.getContent());
+                pageResult,
+                pageResult.getContent());
+
         return ResponseEntity.ok(response);
     }
 
