@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/payments/payos/webhook").permitAll()
                         .requestMatchers("/dev/create-admin").permitAll()
                         .requestMatchers("/health").permitAll()
+                        .requestMatchers("/terms/**").permitAll()
 
                         // Các route yêu cầu quyền USER
                         .requestMatchers(HttpMethod.GET, "/roles/**").hasAuthority("USER")
