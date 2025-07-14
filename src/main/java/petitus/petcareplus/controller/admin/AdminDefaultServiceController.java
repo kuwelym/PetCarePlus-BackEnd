@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.dto.request.service.ServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ServiceRequest;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.service.AdminServiceResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ServiceCriteria;
@@ -37,7 +38,7 @@ public class AdminDefaultServiceController {
 
     @GetMapping
     @Operation(summary = "Get all services with pagination")
-    public ResponseEntity<Page<AdminServiceResponse>> getAllServices(
+    public ResponseEntity<StandardPaginationResponse<AdminServiceResponse>> getAllServices(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
@@ -50,7 +51,13 @@ public class AdminDefaultServiceController {
                 .columns(new String[] { "name", "basePrice", "createdAt" }) // Allowed sort fields
                 .build();
 
-        return ResponseEntity.ok(serviceService.getAllServicesForAdmin(pagination));
+        Page<AdminServiceResponse> pageResult = serviceService.getAllServicesForAdmin(pagination);
+
+        StandardPaginationResponse<AdminServiceResponse> response = new StandardPaginationResponse<>(
+                pageResult,
+                pageResult.getContent());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -81,7 +88,7 @@ public class AdminDefaultServiceController {
 
     @GetMapping("/search/advanced")
     @Operation(summary = "Advanced search services with pagination and filtering")
-    public ResponseEntity<Page<AdminServiceResponse>> searchServicesAdvanced(
+    public ResponseEntity<StandardPaginationResponse<AdminServiceResponse>> searchServicesAdvanced(
             // Search & Filter parameters
             @RequestParam(required = false) String query,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -110,6 +117,12 @@ public class AdminDefaultServiceController {
                 .columns(new String[] { "name", "basePrice", "createdAt" }) // Allowed sort columns
                 .build();
 
-        return ResponseEntity.ok(serviceService.searchServicesForAdmin(criteria, pagination));
+        Page<AdminServiceResponse> pageResult = serviceService.searchServicesForAdmin(criteria, pagination);
+
+        StandardPaginationResponse<AdminServiceResponse> response = new StandardPaginationResponse<>(
+                pageResult,
+                pageResult.getContent());
+
+        return ResponseEntity.ok(response);
     }
 }
