@@ -59,11 +59,14 @@ public class OnlineUserService {
 
             if (Boolean.TRUE.equals(redisTemplate.hasKey(redisKey))) {
                 // Refresh the TTL without triggering presence broadcast
+                System.out.println("User " + userId + " is online, refreshing TTL.");
                 redisTemplate.expire(redisKey, Duration.ofSeconds(ONLINE_USER_TTL_SECONDS));
             } else {
+                System.out.println("User " + userId + " is not online, marking as online now.");
                 handleUserPresence(userId, true);
             }
         } catch (Exception e) {
+            System.out.println("Error handling heartbeat for user " + userId + ": " + e.getMessage());
             log.error("Error handling heartbeat for user {}: {}", userId, e.getMessage(), e);
             handleUserPresence(userId, true);
         }

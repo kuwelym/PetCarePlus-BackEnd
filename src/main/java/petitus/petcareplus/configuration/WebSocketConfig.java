@@ -3,6 +3,7 @@ package petitus.petcareplus.configuration;
 import jakarta.websocket.server.ServerContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,9 @@ import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 import petitus.petcareplus.exceptions.WebSocketExceptionHandler;
 import petitus.petcareplus.security.config.AuthChannelInterceptor;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
@@ -25,6 +29,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final AuthChannelInterceptor authChannelInterceptor;
     private final WebSocketExceptionHandler webSocketExceptionHandler;
+
+    @Value("${cors.allowed-origins:*}")
+    private String[] allowedOrigins;
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
@@ -37,18 +44,32 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Configure allowed origins based on environment
+        String[] origins = getAllowedOrigins();
+        
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*")
+                .setAllowedOrigins(origins)
+                .setAllowedOriginPatterns("*") // Fallback for pattern matching
                 .withSockJS()
                 .setStreamBytesLimit(16 * 1024 * 1024) // 16MB for SockJS
                 .setHttpMessageCacheSize(2000)
                 .setDisconnectDelay(5 * 1000); // 5 seconds disconnect delay
+        
+        // Add a non-SockJS endpoint for direct WebSocket connections
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(origins)
+                .setAllowedOriginPatterns("*");
+        
         registry.setErrorHandler(webSocketExceptionHandler);
+        
+        log.info("WebSocket endpoints registered with allowed origins: {}", Arrays.toString(origins));
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic", "/queue");
+        registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -63,9 +84,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatCustomizer() {
         return factory -> {
-            factory.addConnectorCustomizers(connector ->
-                    connector.setProperty("maxHttpHeaderSize", "65536") // 64KB headers
-            );
+            factory.addConnectorCustomizers(connector -> {
+                connector.setProperty("maxHttpHeaderSize", "65536"); // 64KB headers
+                // Enable WebSocket support
+                connector.setProperty("enableLookups", "false");
+                connector.setProperty("relaxedPathChars", "[]{}|");
+                connector.setProperty("relaxedQueryChars", "[]{}|");
+            });
 
             factory.addContextCustomizers(context ->
                     // Configure WebSocket container limits
@@ -89,5 +114,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Bean
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
+    }
+
+    private String[] getAllowedOrigins() {
+        if (allowedOrigins.length == 1 && "*".equals(allowedOrigins[0])) {
+            // For production, you might want to be more specific
+            return new String[]{
+                "http://localhost:3000",
+                "http://localhost:8080",
+                "http://localhost:3001",
+                "https://petcareplus.software",
+                "https://www.petcareplus.software",
+                "https://petcareapi.nhhtuan.id.vn",
+                "https://www.petcareapi.nhhtuan.id.vn"
+            };
+        }
+        return allowedOrigins;
     }
 }
