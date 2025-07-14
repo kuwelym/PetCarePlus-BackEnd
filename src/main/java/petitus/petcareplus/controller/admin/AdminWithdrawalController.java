@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import petitus.petcareplus.dto.response.PaginationResponse;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.wallet.WithdrawalResponse;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
@@ -32,7 +32,7 @@ public class AdminWithdrawalController {
 
     @GetMapping
     @Operation(summary = "Get all withdrawals", description = "Get all withdrawal requests with pagination")
-    public ResponseEntity<PaginationResponse<WithdrawalResponse>> getAllWithdrawals(
+    public ResponseEntity<StandardPaginationResponse<WithdrawalResponse>> getAllWithdrawals(
             @RequestParam(required = false) WithdrawalStatus status,
             @RequestParam(required = false) BigDecimal amountFrom,
             @RequestParam(required = false) BigDecimal amountTo,
@@ -66,7 +66,7 @@ public class AdminWithdrawalController {
         Page<WithdrawalResponse> pageResult = withdrawalService.getAllWithdrawals(pagination, criteria);
 
         // Convert sang PaginationResponse
-        PaginationResponse<WithdrawalResponse> response = new PaginationResponse<>(
+        StandardPaginationResponse<WithdrawalResponse> response = new StandardPaginationResponse<>(
                 pageResult,
                 pageResult.getContent());
 

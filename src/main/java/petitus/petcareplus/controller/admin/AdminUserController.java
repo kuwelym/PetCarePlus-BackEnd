@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.controller.BaseController;
 import petitus.petcareplus.dto.request.auth.ChangeUserRoleRequest;
 import petitus.petcareplus.dto.request.auth.UpdateUserRequest;
-import petitus.petcareplus.dto.response.PaginationResponse;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.user.UserResponse;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
@@ -46,7 +46,7 @@ public class AdminUserController extends BaseController {
 
         @GetMapping
         @Operation(summary = "Get all users", description = "API để toàn bộ người dùng", security = @SecurityRequirement(name = "bearerAuth"))
-        public ResponseEntity<PaginationResponse<UserResponse>> list(
+        public ResponseEntity<StandardPaginationResponse<UserResponse>> list(
                         @RequestParam(required = false) final List<String> roles,
 
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime createdAtStart,
@@ -88,9 +88,13 @@ public class AdminUserController extends BaseController {
                                                 .columns(SORT_COLUMNS)
                                                 .build());
 
-                return ResponseEntity.ok(new PaginationResponse<>(users, users.getContent().stream()
-                                .map(UserResponse::convert)
-                                .collect(Collectors.toList())));
+                StandardPaginationResponse<UserResponse> response = new StandardPaginationResponse<>(
+                                users,
+                                users.getContent().stream()
+                                                .map(UserResponse::convert)
+                                                .collect(Collectors.toList()));
+
+                return ResponseEntity.ok(response);
         }
 
         @GetMapping("/{id}")

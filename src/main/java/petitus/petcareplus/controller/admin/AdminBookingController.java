@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.booking.AdminBookingResponse;
 import petitus.petcareplus.model.spec.criteria.BookingCriteria;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
@@ -34,7 +35,7 @@ public class AdminBookingController {
 
     @GetMapping
     @Operation(summary = "Get all bookings with pagination")
-    public ResponseEntity<Page<AdminBookingResponse>> getAllBookings(
+    public ResponseEntity<StandardPaginationResponse<AdminBookingResponse>> getAllBookings(
 
             // Search & Filter parameters
             @RequestParam(required = false) String query,
@@ -68,7 +69,12 @@ public class AdminBookingController {
                                                                                     // fields
                 .build();
 
-        return ResponseEntity.ok(bookingService.getAllBookingsForAdmin(pagination, criteria));
+        Page<AdminBookingResponse> pageResult = bookingService.getAllBookingsForAdmin(pagination, criteria);
+        StandardPaginationResponse<AdminBookingResponse> response = new StandardPaginationResponse<>(
+                pageResult,
+                pageResult.getContent());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

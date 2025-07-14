@@ -17,7 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.wallet.WithdrawalRequest;
-import petitus.petcareplus.dto.response.PaginationResponse;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.wallet.WithdrawalResponse;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.WithdrawalService;
@@ -45,7 +45,7 @@ public class WithdrawalController {
     @GetMapping("/me")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = "Get my withdrawals", description = "Get withdrawal history for current provider")
-    public ResponseEntity<PaginationResponse<WithdrawalResponse>> getMyWithdrawals(
+    public ResponseEntity<StandardPaginationResponse<WithdrawalResponse>> getMyWithdrawals(
             @AuthenticationPrincipal JwtUserDetails userDetails,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -54,7 +54,7 @@ public class WithdrawalController {
         Page<WithdrawalResponse> withdrawals = withdrawalService.getProviderWithdrawals(userDetails.getId(),
                 pageRequest);
 
-        PaginationResponse<WithdrawalResponse> response = new PaginationResponse<>(
+        StandardPaginationResponse<WithdrawalResponse> response = new StandardPaginationResponse<>(
                 withdrawals,
                 withdrawals.getContent());
 

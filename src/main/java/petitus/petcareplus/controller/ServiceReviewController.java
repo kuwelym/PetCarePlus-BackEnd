@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.review.ServiceReviewRequest;
 import petitus.petcareplus.dto.request.review.ServiceReviewUpdateRequest;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.review.ServiceReviewResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ServiceReviewCriteria;
@@ -71,7 +72,7 @@ public class ServiceReviewController {
     @GetMapping("/me")
     @PreAuthorize("hasAuthority('USER')")
     @Operation(summary = "Get current user's reviews", description = "Get all reviews created by the current user")
-    public ResponseEntity<Page<ServiceReviewResponse>> getUserReviews(
+    public ResponseEntity<StandardPaginationResponse<ServiceReviewResponse>> getUserReviews(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
@@ -86,12 +87,15 @@ public class ServiceReviewController {
                 .build();
 
         Page<ServiceReviewResponse> reviews = serviceReviewService.getUserReviews(pagination);
-        return ResponseEntity.ok(reviews);
+        StandardPaginationResponse<ServiceReviewResponse> response = new StandardPaginationResponse<>(
+                reviews,
+                reviews.getContent());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/provider-services/{providerServiceId}")
     @Operation(summary = "Get reviews for a provider service", description = "Get reviews for a specific provider service")
-    public ResponseEntity<Page<ServiceReviewResponse>> getProviderServiceReviews(
+    public ResponseEntity<StandardPaginationResponse<ServiceReviewResponse>> getProviderServiceReviews(
             @PathVariable UUID providerServiceId,
 
             @RequestParam(required = false) Integer rating,
@@ -122,7 +126,14 @@ public class ServiceReviewController {
                 .columns(new String[] { "rating", "createdAt", "updatedAt" })
                 .build();
 
-        return ResponseEntity.ok(serviceReviewService.getServiceReviews(providerServiceId, criteria, pagination));
+        Page<ServiceReviewResponse> pageResult = serviceReviewService.getServiceReviews(providerServiceId, criteria,
+                pagination);
+
+        StandardPaginationResponse<ServiceReviewResponse> response = new StandardPaginationResponse<>(
+                pageResult,
+                pageResult.getContent());
+
+        return ResponseEntity.ok(response);
     }
 
     // @GetMapping("/provider/{providerId}")

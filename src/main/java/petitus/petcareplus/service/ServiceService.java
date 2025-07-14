@@ -38,11 +38,13 @@ public class ServiceService {
     }
 
     // new method with pagination
-    public Page<ServiceResponse> getAllServices(PaginationCriteria pagination) {
-        PageRequest pageRequest = PageRequestBuilder.build(pagination);
-        Page<DefaultService> services = serviceRepository.findAll(pageRequest);
+    public List<ServiceResponse> getAllServices(PaginationCriteria pagination) {
+        // PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        List<DefaultService> services = serviceRepository.findAll();
 
-        return services.map(this::mapToServiceResponse);
+        return services.stream()
+                .map(this::mapToServiceResponse)
+                .collect(Collectors.toList());
     }
 
     public ServiceResponse getServiceById(UUID id) {
@@ -113,18 +115,23 @@ public class ServiceService {
         serviceRepository.deleteById(id);
     }
 
-    public Page<ServiceResponse> searchServices(ServiceCriteria criteria, PaginationCriteria pagination) {
+    public List<ServiceResponse> searchServices(ServiceCriteria criteria) {
         // Tạo Specification từ criteria
         Specification<DefaultService> specification = new ServiceFilterSpecification(criteria);
 
         // Tạo PageRequest từ pagination
-        PageRequest pageRequest = PageRequestBuilder.build(pagination);
+        // PageRequest pageRequest = PageRequestBuilder.build(pagination);
 
         // Execute query với pagination + filtering
-        Page<DefaultService> services = serviceRepository.findAll(specification, pageRequest);
+        // Page<DefaultService> services = serviceRepository.findAll(specification,
+        // pageRequest);
+
+        List<DefaultService> services = serviceRepository.findAll(specification);
 
         // Convert Entity → Response DTO
-        return services.map(this::mapToServiceResponse);
+        return services.stream()
+                .map(this::mapToServiceResponse)
+                .collect(Collectors.toList());
     }
 
     public Page<AdminServiceResponse> getAllServicesForAdmin(PaginationCriteria pagination) {
