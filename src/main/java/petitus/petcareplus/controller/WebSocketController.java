@@ -80,9 +80,11 @@ public class WebSocketController {
             Principal principal
     ) {
         try {
+            System.out.println("Heartbeat received from user: " + principal.getName());
             UUID userId = UUID.fromString(principal.getName());
             webSocketService.handleHeartbeat(userId);
         } catch (Exception e) {
+            System.out.println("rrorHeartbeat received from user: " + principal.getName());
             log.error("Error processing heartbeat", e);
         }
     }
