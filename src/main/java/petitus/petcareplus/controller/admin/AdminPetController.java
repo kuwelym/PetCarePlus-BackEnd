@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import petitus.petcareplus.dto.request.pet.AdminCreatePetRequest;
 import petitus.petcareplus.dto.request.pet.AdminUpdatePetRequest;
-import petitus.petcareplus.dto.response.PaginationResponse;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.pet.AdminPetResponse;
 import petitus.petcareplus.dto.response.pet.PetResponse;
 
@@ -45,7 +45,7 @@ public class AdminPetController {
 
     @GetMapping
     @Operation(summary = "Get all pets with pagination and filtering")
-    public ResponseEntity<PaginationResponse<AdminPetResponse>> getAllPets(
+    public ResponseEntity<StandardPaginationResponse<AdminPetResponse>> getAllPets(
 
             // Search & Filter parameters
             @RequestParam(required = false) String query,
@@ -78,7 +78,7 @@ public class AdminPetController {
         Page<AdminPetResponse> pageResult = petService.getAllPetsForAdmin(criteria, pagination);
 
         // Convert sang PaginationResponse
-        PaginationResponse<AdminPetResponse> response = new PaginationResponse<>(
+        StandardPaginationResponse<AdminPetResponse> response = new StandardPaginationResponse<>(
                 pageResult,
                 pageResult.getContent());
 
@@ -122,7 +122,8 @@ public class AdminPetController {
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get all pets by user ID")
-    public ResponseEntity<PaginationResponse<AdminPetResponse>> getPetsByUserIdForAdmin(@PathVariable UUID userId,
+    public ResponseEntity<StandardPaginationResponse<AdminPetResponse>> getPetsByUserIdForAdmin(
+            @PathVariable UUID userId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
@@ -139,7 +140,7 @@ public class AdminPetController {
         Page<AdminPetResponse> pageResult = petService.getPetsByUserId(userId, pagination);
 
         // Convert sang PaginationResponse
-        PaginationResponse<AdminPetResponse> response = new PaginationResponse<>(
+        StandardPaginationResponse<AdminPetResponse> response = new StandardPaginationResponse<>(
                 pageResult,
                 pageResult.getContent());
         return ResponseEntity.ok(response);

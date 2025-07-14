@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import petitus.petcareplus.dto.response.PaginationResponse;
+import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.notification.AdminNotificationResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.service.NotificationService;
@@ -31,7 +31,7 @@ public class AdminNotificationController {
 
     @GetMapping
     @Operation(summary = "Get all notifications with pagination")
-    public ResponseEntity<PaginationResponse<AdminNotificationResponse>> getAllNotifications(
+    public ResponseEntity<StandardPaginationResponse<AdminNotificationResponse>> getAllNotifications(
 
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -52,7 +52,7 @@ public class AdminNotificationController {
         Page<AdminNotificationResponse> pageResult = notificationService.getAllNotificationsForAdmin(pagination);
 
         // Convert sang PaginationResponse
-        PaginationResponse<AdminNotificationResponse> response = new PaginationResponse<>(
+        StandardPaginationResponse<AdminNotificationResponse> response = new StandardPaginationResponse<>(
                 pageResult,
                 pageResult.getContent());
 
