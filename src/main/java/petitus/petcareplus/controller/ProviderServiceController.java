@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import petitus.petcareplus.dto.request.service.ProviderServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ProviderServiceRequest;
@@ -18,10 +19,12 @@ import petitus.petcareplus.dto.response.StandardPaginationResponse;
 import petitus.petcareplus.dto.response.service.ProviderServiceResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ProviderServiceCriteria;
+import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ProviderServiceService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 //import java.util.List;
 import java.util.UUID;
 
@@ -150,4 +153,17 @@ public class ProviderServiceController {
                 return ResponseEntity.ok(
                                 providerServiceService.getProviderServiceByProviderAndService(providerId, serviceId));
         }
+
+        @GetMapping("/me")
+        @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
+        @Operation(summary = "Get all provider services for the current user")
+        public ResponseEntity<List<ProviderServiceResponse>> getMyProviderServices(
+                        @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+                List<ProviderServiceResponse> response = providerServiceService
+                                .getProviderServices(userDetails.getId());
+
+                return ResponseEntity.ok(response);
+        }
+
 }
