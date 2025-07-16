@@ -7,10 +7,13 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import petitus.petcareplus.dto.response.service.ServiceResponse;
+import petitus.petcareplus.dto.response.service.ServiceResponseForProvider;
 import petitus.petcareplus.model.spec.criteria.ServiceCriteria;
+import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ServiceService;
 
 import java.math.BigDecimal;
@@ -30,6 +33,17 @@ public class ServiceController {
     public ResponseEntity<List<ServiceResponse>> getAllServices() {
 
         return ResponseEntity.ok(serviceService.getAllServices());
+    }
+
+    @GetMapping("/for-current-provider")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
+    @Operation(summary = "Get all services for current provider with availability status")
+    public ResponseEntity<List<ServiceResponseForProvider>> getAllServicesForProvider(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        List<ServiceResponseForProvider> services = serviceService
+                .getAllServicesForCurrentProvider(userDetails.getId());
+        return ResponseEntity.ok(services);
     }
 
     @GetMapping("/{id}")

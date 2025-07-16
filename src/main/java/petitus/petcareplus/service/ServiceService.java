@@ -12,9 +12,11 @@ import petitus.petcareplus.dto.request.service.ServicePatchRequest;
 import petitus.petcareplus.dto.request.service.ServiceRequest;
 import petitus.petcareplus.dto.response.service.AdminServiceResponse;
 import petitus.petcareplus.dto.response.service.ServiceResponse;
+import petitus.petcareplus.dto.response.service.ServiceResponseForProvider;
 import petitus.petcareplus.exceptions.BadRequestException;
 import petitus.petcareplus.exceptions.ResourceNotFoundException;
 import petitus.petcareplus.model.DefaultService;
+import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.spec.ServiceFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ServiceCriteria;
@@ -22,6 +24,7 @@ import petitus.petcareplus.repository.ServiceRepository;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,11 +32,33 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ServiceService {
     private final ServiceRepository serviceRepository;
+    private final ProviderServiceService providerServiceService;
 
     // old method
     public List<ServiceResponse> getAllServices() {
         return serviceRepository.findAll().stream()
                 .map(this::mapToServiceResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ServiceResponseForProvider> getAllServicesForCurrentProvider(UUID providerId) {
+        List<DefaultService> services = serviceRepository.findAll();
+
+        if (services.isEmpty()) {
+            return List.of(); // Return empty list if no services found
+        }
+
+        // Lấy danh sách services mà provider đã có
+        List<ProviderService> providerServices = providerServiceService.getProviderServicesByProviderId(providerId);
+        Set<UUID> existingServiceIds = providerServices.stream()
+                .map(ps -> ps.getService().getId())
+                .collect(Collectors.toSet());
+
+        return services.stream()
+                .map(service -> {
+                    boolean isAvailable = !existingServiceIds.contains(service.getId());
+                    return mapToServiceResponseForProvider(service, isAvailable);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -175,6 +200,20 @@ public class ServiceService {
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
                 .deletedAt(service.getDeletedAt())
+                .build();
+    }
+
+    private ServiceResponseForProvider mapToServiceResponseForProvider(DefaultService service,
+            boolean isServiceAvailable) {
+        return ServiceResponseForProvider.builder()
+                .id(service.getId())
+                .name(service.getName())
+                .description(service.getDescription())
+                .iconUrl(service.getIconUrl())
+                .basePrice(service.getBasePrice())
+                .serviceAvailable(isServiceAvailable)
+                .createdAt(service.getCreatedAt())
+                .updatedAt(service.getUpdatedAt())
                 .build();
     }
 }
