@@ -82,6 +82,10 @@ public class ProviderServiceService {
                                 .collect(Collectors.toList());
         }
 
+        public List<ProviderService> getProviderServicesByProviderId(UUID providerId) {
+                return providerServiceRepository.findActiveServicesByProviderId(providerId);
+        }
+
         public List<ProviderServiceResponse> getProvidersByService(UUID serviceId) {
                 return providerServiceRepository.findProvidersByServiceId(serviceId).stream()
                                 .map(this::mapToProviderServiceResponse)
