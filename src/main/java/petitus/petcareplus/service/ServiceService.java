@@ -160,6 +160,8 @@ public class ServiceService {
                 .description(service.getDescription())
                 .iconUrl(service.getIconUrl())
                 .basePrice(service.getBasePrice())
+                .createdAt(service.getCreatedAt())
+                .updatedAt(service.getUpdatedAt())
                 .build();
     }
 
