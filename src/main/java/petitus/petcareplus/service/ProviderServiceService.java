@@ -24,6 +24,7 @@ import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceRepository;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +36,9 @@ public class ProviderServiceService {
         private final ProviderServiceRepository providerServiceRepository;
         private final ServiceRepository serviceRepository;
         private final UserService userService;
+        private final MessageSourceService messageSourceService;
+
+        private static final BigDecimal MAX_CUSTOM_PRICE = new BigDecimal("10000000"); // 10 million
 
         // New method
         public Page<ProviderServiceResponse> getAllProviderServices(ProviderServiceCriteria criteria,
@@ -133,6 +137,12 @@ public class ProviderServiceService {
                 // Ensure only the owner can update
                 if (!providerService.getProvider().getId().equals(currentUserId)) {
                         throw new ForbiddenException("You are not authorized to update this service");
+                }
+
+                // Limit custom price more than 10 million
+                if (request.getCustomPrice() != null
+                                && request.getCustomPrice().compareTo(MAX_CUSTOM_PRICE) > 0) {
+                        throw new BadRequestException(messageSourceService.get("custom_price_exceeds_limit"));
                 }
 
                 if (request.getCustomPrice() != null) {

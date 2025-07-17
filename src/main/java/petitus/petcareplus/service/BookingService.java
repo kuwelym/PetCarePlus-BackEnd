@@ -49,6 +49,9 @@ public class BookingService {
     private final MessageSourceService messageSourceService;
     private final WalletService walletService;
 
+    // Limit
+    private static final BigDecimal MAX_TOTAL_PRICE = new BigDecimal("500000000");
+
     @Transactional
     public BookingResponse createBooking(UUID userId, BookingRequest request) {
         // Validate user
@@ -87,6 +90,15 @@ public class BookingService {
         BigDecimal servicePrice = providerService.getCustomPrice() != null ? providerService.getCustomPrice()
                 : service.getBasePrice();
         BigDecimal totalPrice = servicePrice.multiply(BigDecimal.valueOf(request.getPetList().size()));
+
+        if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException(messageSourceService.get("booking_total_price_invalid"));
+        }
+
+        if (totalPrice.compareTo(MAX_TOTAL_PRICE) > 0) {
+            throw new BadRequestException(messageSourceService.get("booking_total_price_exceeds_limit"));
+        }
+
         booking.setTotalPrice(totalPrice);
 
         // Save booking first

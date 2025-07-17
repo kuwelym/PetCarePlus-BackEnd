@@ -32,7 +32,7 @@ public class ProviderService {
     @JoinColumn(name = "service_id", nullable = false)
     private DefaultService service;
 
-    @Column(name = "custom_price", precision = 8, scale = 2, nullable = false)
+    @Column(name = "custom_price", precision = 12, scale = 2, nullable = false)
     private BigDecimal customPrice;
 
     @Column(name = "custom_description", columnDefinition = "TEXT")
