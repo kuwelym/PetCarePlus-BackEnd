@@ -1,6 +1,7 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,9 +28,11 @@ import petitus.petcareplus.utils.PageRequestBuilder;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProviderServiceService {
@@ -73,7 +76,7 @@ public class ProviderServiceService {
 
         public ProviderServiceResponse getProviderServiceByProviderAndService(UUID providerId, UUID serviceId) {
                 ProviderService providerService = providerServiceRepository
-                                .findByProviderIdAndServiceId(providerId, serviceId)
+                                .findActiveByProviderIdAndServiceId(providerId, serviceId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Provider service not found with provider id: " + providerId
                                                                 + " and service id: " + serviceId));
@@ -90,12 +93,6 @@ public class ProviderServiceService {
                 return providerServiceRepository.findActiveServicesByProviderId(providerId);
         }
 
-        public List<ProviderServiceResponse> getProvidersByService(UUID serviceId) {
-                return providerServiceRepository.findProvidersByServiceId(serviceId).stream()
-                                .map(this::mapToProviderServiceResponse)
-                                .collect(Collectors.toList());
-        }
-
         @Transactional
         public ProviderServiceResponse addServiceToProvider(ProviderServiceRequest request) {
                 User provider = userService.getUser();
@@ -104,10 +101,28 @@ public class ProviderServiceService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Service not found with id: " + request.getServiceId()));
 
+                Optional<ProviderService> existingService = providerServiceRepository
+                                .findByProviderIdAndServiceId(provider.getId(), request.getServiceId());
+
                 // Check if provider already offers this service
-                if (providerServiceRepository.findByProviderIdAndServiceId(provider.getId(), request.getServiceId())
+                if (existingService
                                 .isPresent()) {
-                        throw new BadRequestException("Provider already offers this service");
+                        ProviderService existing = existingService.get();
+                        if (existing.getDeletedAt() != null) {
+                                // Nếu đã soft deleted, phục hồi lại
+                                existing.setDeletedAt(null);
+                                existing.setCustomPrice(request.getCustomPrice() != null ? request.getCustomPrice()
+                                                : service.getBasePrice());
+                                existing.setCustomDescription(
+                                                request.getCustomDescription() != null ? request.getCustomDescription()
+                                                                : service.getDescription());
+
+                                ProviderService restoredProviderService = providerServiceRepository.save(existing);
+                                return mapToProviderServiceResponse(restoredProviderService);
+                        } else {
+                                throw new BadRequestException("Provider already offers this service");
+                        }
+
                 }
 
                 ProviderService providerService = ProviderService.builder()
@@ -176,6 +191,7 @@ public class ProviderServiceService {
 
         private Specification<ProviderService> buildSpecification(ProviderServiceCriteria criteria) {
                 if (criteria == null) {
+                        log.info("ProviderServiceCriteria is null, returning all active services");
                         // Default: chỉ lấy active services
                         return ProviderServiceSpecification.isActive();
                 }

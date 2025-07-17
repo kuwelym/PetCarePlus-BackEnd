@@ -1,6 +1,8 @@
 package petitus.petcareplus.model.spec;
 
 import jakarta.persistence.criteria.Join;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.jpa.domain.Specification;
 import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.model.ProviderService;
@@ -11,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 public class ProviderServiceSpecification {
 
     // Search by service name or provider name
@@ -112,12 +115,15 @@ public class ProviderServiceSpecification {
     public static Specification<ProviderService> isDeleted(Boolean isDeleted) {
         return (root, query, criteriaBuilder) -> {
             if (isDeleted == null) {
-                return criteriaBuilder.conjunction();
+                // log.info("isDeleted is null, returning all active services");
+                return criteriaBuilder.isNull(root.get("deletedAt"));
             }
 
             if (isDeleted) {
+                // log.info("Filtering for deleted services");
                 return criteriaBuilder.isNotNull(root.get("deletedAt"));
             } else {
+                // log.info("Filtering for active services");
                 return criteriaBuilder.isNull(root.get("deletedAt"));
             }
         };
