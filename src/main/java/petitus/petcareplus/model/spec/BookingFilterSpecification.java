@@ -44,6 +44,13 @@ public final class BookingFilterSpecification implements Specification<Booking> 
                     builder.like(builder.lower(providerLastNamePath), searchPattern)));
         }
 
+        // Filter by email
+        if (criteria.getMail() != null && !criteria.getMail().trim().isEmpty()) {
+            String emailPattern = "%" + criteria.getMail().toLowerCase() + "%";
+            Path<String> emailPath = root.get("user").get("email");
+            predicates.add(builder.like(builder.lower(emailPath), emailPattern));
+        }
+
         // Filter by status
         if (criteria.getStatus() != null) {
             predicates.add(builder.equal(root.get("status"), criteria.getStatus()));
