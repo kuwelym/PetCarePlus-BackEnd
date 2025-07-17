@@ -31,56 +31,58 @@ import petitus.petcareplus.utils.enums.PaymentStatus;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminBookingController {
 
-    private final BookingService bookingService;
+        private final BookingService bookingService;
 
-    @GetMapping
-    @Operation(summary = "Get all bookings with pagination")
-    public ResponseEntity<StandardPaginationResponse<AdminBookingResponse>> getAllBookings(
+        @GetMapping
+        @Operation(summary = "Get all bookings with pagination")
+        public ResponseEntity<StandardPaginationResponse<AdminBookingResponse>> getAllBookings(
 
-            // Search & Filter parameters
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) BookingStatus status,
-            @RequestParam(required = false) PaymentStatus paymentStatus,
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) UUID providerId,
-            @RequestParam(required = false) Boolean isDeleted,
+                        // Search & Filter parameters
+                        @RequestParam(required = false) String query,
+                        @RequestParam(required = false) BookingStatus status,
+                        @RequestParam(required = false) PaymentStatus paymentStatus,
+                        @RequestParam(required = false) UUID userId,
+                        @RequestParam(required = false) UUID providerId,
+                        @RequestParam(required = false) Boolean isDeleted,
+                        @RequestParam(required = false) String mail,
 
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "asc") String sort) {
+                        @RequestParam(defaultValue = "1") Integer page,
+                        @RequestParam(defaultValue = "10") Integer size,
+                        @RequestParam(required = false) String sortBy,
+                        @RequestParam(defaultValue = "asc") String sort) {
 
-        BookingCriteria criteria = BookingCriteria.builder()
-                .query(query) // Search by comment or user name
-                .status(status) // Filter by booking status
-                .paymentStatus(paymentStatus) // Filter by payment status
-                .userId(userId) // Filter by user ID
-                .providerId(providerId) // Filter by provider ID
-                .isDeleted(isDeleted) // Filter by deleted status (for admin)
-                .build();
+                BookingCriteria criteria = BookingCriteria.builder()
+                                .query(query) // Search by comment or user name
+                                .status(status) // Filter by booking status
+                                .paymentStatus(paymentStatus) // Filter by payment status
+                                .userId(userId) // Filter by user ID
+                                .providerId(providerId) // Filter by provider ID
+                                .isDeleted(isDeleted) // Filter by deleted status (for admin)
+                                .mail(mail) // Filter by email
+                                .build();
 
-        PaginationCriteria pagination = PaginationCriteria.builder()
-                .page(page)
-                .size(size)
-                .sortBy(sortBy)
-                .sort(sort)
-                .columns(new String[] { "createdAt", "totalPrice", "bookingTime" }) // Allowed
-                                                                                    // sort
-                                                                                    // fields
-                .build();
+                PaginationCriteria pagination = PaginationCriteria.builder()
+                                .page(page)
+                                .size(size)
+                                .sortBy(sortBy)
+                                .sort(sort)
+                                .columns(new String[] { "createdAt", "totalPrice", "bookingTime" }) // Allowed
+                                                                                                    // sort
+                                                                                                    // fields
+                                .build();
 
-        Page<AdminBookingResponse> pageResult = bookingService.getAllBookingsForAdmin(pagination, criteria);
-        StandardPaginationResponse<AdminBookingResponse> response = new StandardPaginationResponse<>(
-                pageResult,
-                pageResult.getContent());
+                Page<AdminBookingResponse> pageResult = bookingService.getAllBookingsForAdmin(pagination, criteria);
+                StandardPaginationResponse<AdminBookingResponse> response = new StandardPaginationResponse<>(
+                                pageResult,
+                                pageResult.getContent());
 
-        return ResponseEntity.ok(response);
-    }
+                return ResponseEntity.ok(response);
+        }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get booking by ID")
-    public ResponseEntity<AdminBookingResponse> getBookingById(@PathVariable UUID id) {
-        return ResponseEntity.ok(bookingService.getBookingByIdForAdmin(id));
-    }
+        @GetMapping("/{id}")
+        @Operation(summary = "Get booking by ID")
+        public ResponseEntity<AdminBookingResponse> getBookingById(@PathVariable UUID id) {
+                return ResponseEntity.ok(bookingService.getBookingByIdForAdmin(id));
+        }
 
 }

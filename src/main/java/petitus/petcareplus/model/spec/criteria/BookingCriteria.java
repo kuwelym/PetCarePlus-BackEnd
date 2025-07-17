@@ -20,4 +20,5 @@ public class BookingCriteria {
     private UUID userId; // Filter by user ID
     private UUID providerId; // Filter by provider ID
     private Boolean isDeleted; // Filter by deleted status (for admin)
+    private String mail;
 }
