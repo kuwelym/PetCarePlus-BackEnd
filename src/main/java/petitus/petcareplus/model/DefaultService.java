@@ -27,6 +27,6 @@ public class DefaultService extends AbstractBaseEntity {
     @Column(name = "icon_url")
     private String iconUrl;
 
-    @Column(name = "base_price", precision = 8, scale = 2, nullable = false)
+    @Column(name = "base_price", precision = 12, scale = 2, nullable = false)
     private BigDecimal basePrice;
 }
