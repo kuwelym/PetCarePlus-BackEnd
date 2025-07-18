@@ -42,7 +42,7 @@ public class Booking extends AbstractBaseEntity {
     @Builder.Default
     private BookingStatus status = BookingStatus.PENDING; // pending, accepted, ongoing, completed, cancelled
 
-    @Column(name = "total_price", nullable = false, precision = 8, scale = 2)
+    @Column(name = "total_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)

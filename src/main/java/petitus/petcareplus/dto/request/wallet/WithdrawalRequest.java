@@ -10,7 +10,7 @@ public class WithdrawalRequest {
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "10000", message = "Minimum withdrawal amount is 10,000 VND")
-    @DecimalMax(value = "50000000", message = "Maximum withdrawal amount is 10,000,000 VND")
+    @DecimalMax(value = "50000000", message = "Maximum withdrawal amount is 50,000,000 VND")
     private BigDecimal amount;
 
     @NotBlank(message = "Bank code is required")
