@@ -86,4 +86,16 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpec
                         @Param("userId") UUID userId,
                         @Param("providerServiceId") UUID providerServiceId,
                         @Param("cutoffDate") LocalDateTime cutoffDate);
+
+        // Lấy top 5 users gần nhất đã booking với provider
+        @Query("""
+                        SELECT DISTINCT b.user, MAX(b.createdAt) as lastBookingDate, COUNT(b.id) as totalBookings
+                        FROM Booking b
+                        WHERE b.provider.id = :providerId
+                        AND b.deletedAt IS NULL
+                        AND b.status != 'CANCELLED'
+                        GROUP BY b.user
+                        ORDER BY MAX(b.createdAt) DESC
+                        """)
+        List<Object[]> findTop5RecentUsersByProviderId(@Param("providerId") UUID providerId, Pageable pageable);
 }
