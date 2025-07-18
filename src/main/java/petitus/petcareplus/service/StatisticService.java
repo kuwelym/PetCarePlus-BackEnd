@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import petitus.petcareplus.dto.response.service.TopProviderServiceResponse;
 import petitus.petcareplus.dto.response.user.RecentUserResponse;
+import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.User;
 import petitus.petcareplus.repository.BookingRepository;
 
@@ -43,6 +45,39 @@ public class StatisticService {
         return getTop5RecentUsers(currentProviderId);
     }
 
+    @Transactional(readOnly = true)
+    public List<TopProviderServiceResponse> getTop5ProviderServices() {
+        PageRequest pageRequest = PageRequest.of(0, 5);
+        List<Object[]> results = bookingRepository.findTopProviderServicesByBookingCount(pageRequest);
+
+        return results.stream()
+                .map(this::mapToTopProviderServiceResponse)
+                .collect(Collectors.toList());
+    }
+
+    // @Transactional(readOnly = true)
+    // public List<TopProviderServiceResponse> getTop5ProviderServicesInPeriod(
+    // LocalDateTime startDate, LocalDateTime endDate) {
+    // PageRequest pageRequest = PageRequest.of(0, 5);
+    // List<Object[]> results =
+    // bookingRepository.findTopProviderServicesByBookingCountInPeriod(
+    // startDate, endDate, pageRequest);
+
+    // return results.stream()
+    // .map(this::mapToTopProviderServiceResponse)
+    // .collect(Collectors.toList());
+    // }
+
+    @Transactional(readOnly = true)
+    public List<TopProviderServiceResponse> getTopProviderServices(int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit);
+        List<Object[]> results = bookingRepository.findTopProviderServicesByBookingCount(pageRequest);
+
+        return results.stream()
+                .map(this::mapToTopProviderServiceResponse)
+                .collect(Collectors.toList());
+    }
+
     private RecentUserResponse mapToRecentUserResponse(User user, LocalDateTime lastBookingDate, Long totalBookings) {
         return RecentUserResponse.builder()
                 .id(user.getId())
@@ -54,4 +89,25 @@ public class StatisticService {
                 .totalBookings(totalBookings)
                 .build();
     }
+
+    private TopProviderServiceResponse mapToTopProviderServiceResponse(Object[] result) {
+        ProviderService ps = (ProviderService) result[0];
+        Long totalBookings = ((Number) result[1]).longValue();
+
+        return TopProviderServiceResponse.builder()
+                .id(ps.getId())
+                .providerId(ps.getProvider().getId())
+                .providerName(ps.getProvider().getFullName())
+                .providerAvatarUrl(
+                        ps.getProvider().getProfile() != null ? ps.getProvider().getProfile().getAvatarUrl() : null)
+                .serviceId(ps.getService().getId())
+                .serviceName(ps.getService().getName())
+                .serviceIconUrl(ps.getService().getIconUrl())
+                .customPrice(ps.getCustomPrice())
+                .basePrice(ps.getService().getBasePrice())
+                .customDescription(ps.getCustomDescription())
+                .totalBookings(totalBookings)
+                .build();
+    }
+
 }

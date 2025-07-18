@@ -98,4 +98,40 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpec
                         ORDER BY MAX(b.createdAt) DESC
                         """)
         List<Object[]> findTop5RecentUsersByProviderId(@Param("providerId") UUID providerId, Pageable pageable);
+
+        // Lấy top provider-services được booking nhiều nhất
+        @Query("""
+                        SELECT ps, COUNT(b.id) as totalBookings
+                        FROM Booking b
+                        JOIN b.providerService ps
+                        WHERE b.deletedAt IS NULL
+                        AND ps.deletedAt IS NULL
+                        AND b.status != 'CANCELLED'
+                        GROUP BY ps.id, ps.provider.id, ps.service.id
+                        ORDER BY COUNT(b.id) DESC
+                        """)
+        List<Object[]> findTopProviderServicesByBookingCount(Pageable pageable);
+
+        // Alternative: Lấy theo khoảng thời gian
+        // @Query("""
+        // SELECT ps, COUNT(b.id) as totalBookings,
+        // AVG(CAST(sr.rating AS double)) as averageRating,
+        // COUNT(sr.id) as totalReviews
+        // FROM Booking b
+        // JOIN b.providerService ps
+        // LEFT JOIN ServiceReview sr ON sr.providerService.id = ps.id AND sr.deletedAt
+        // IS NULL
+        // WHERE b.deletedAt IS NULL
+        // AND ps.deletedAt IS NULL
+        // AND b.status != 'CANCELLED'
+        // AND b.createdAt >= :startDate
+        // AND b.createdAt <= :endDate
+        // GROUP BY ps.id, ps.provider.id, ps.service.id
+        // ORDER BY COUNT(b.id) DESC
+        // """)
+        // List<Object[]> findTopProviderServicesByBookingCountInPeriod(
+        // @Param("startDate") LocalDateTime startDate,
+        // @Param("endDate") LocalDateTime endDate,
+        // Pageable pageable);
+
 }
