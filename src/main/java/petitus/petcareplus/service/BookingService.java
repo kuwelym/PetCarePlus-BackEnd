@@ -169,44 +169,19 @@ public class BookingService {
                 booking.setCancellationReason(request.getCancellationReason());
                 break;
             case SERVICE_DONE:
-                // Only provider can mark as service done
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_mark_service_done"));
-                // }
                 booking.setActualEndTime(LocalDateTime.now());
                 break;
             case COMPLETED:
-                // Only user can mark as completed
-                // if (!isUser) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_user_can_mark_completed"));
-                // }
                 if (booking.getPaymentStatus() != PaymentStatus.COMPLETED) {
                     throw new BadRequestException(messageSourceService.get("payment_required_before_completion"));
                 }
 
                 booking.setActualEndTime(LocalDateTime.now());
-                // walletService.createWalletTransaction(booking.getProvider().getId(),
-                // booking.getTotalPrice(),
-                // TransactionType.SERVICE_PROVIDER_EARNING, TransactionStatus.COMPLETED,
-                // "Payment for provider",
-                // bookingId);
                 handleWalletAfterPaymentSuccess(booking);
                 break;
             case ONGOING:
-                // Only provider can mark as ongoing
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_mark_ongoing"));
-                // }
                 break;
             case ACCEPTED:
-                // Only provider can accept booking
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_accept_booking"));
-                // }
                 break;
             default:
                 break;

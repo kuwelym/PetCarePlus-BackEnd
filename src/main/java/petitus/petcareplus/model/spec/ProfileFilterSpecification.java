@@ -17,15 +17,14 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
 
     @Override
     public Predicate toPredicate(@NonNull final Root<Profile> root,
-                                 @NonNull final CriteriaQuery<?> query,
-                                 @NonNull final CriteriaBuilder builder) {
+            @NonNull final CriteriaQuery<?> query,
+            @NonNull final CriteriaBuilder builder) {
         if (criteria == null) {
             return null;
         }
 
         List<Predicate> predicates = new ArrayList<>();
-
-
+        predicates.add(builder.isNull(root.get("deletedAt")));
 
         if (criteria.getQuery() != null) {
             String q = String.format("%%%s%%", criteria.getQuery().toLowerCase());
@@ -33,27 +32,23 @@ public final class ProfileFilterSpecification implements Specification<Profile> 
             predicates.add(
                     builder.or(
                             builder.like(builder.lower(userJoin.get("name")), q),
-                            builder.like(builder.lower(userJoin.get("lastName")), q)
-                    )
-            );
+                            builder.like(builder.lower(userJoin.get("lastName")), q)));
         }
 
         if (criteria.getLocation() != null) {
             predicates.add(
-                    builder.like(builder.lower(root.get("location")), "%" + criteria.getLocation().toLowerCase() + "%")
-            );
+                    builder.like(builder.lower(root.get("location")),
+                            "%" + criteria.getLocation().toLowerCase() + "%"));
         }
 
         if (criteria.getCreatedAtStart() != null) {
             predicates.add(
-                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart())
-            );
+                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart()));
         }
 
         if (criteria.getCreatedAtEnd() != null) {
             predicates.add(
-                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd())
-            );
+                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd()));
         }
 
         if (predicates.isEmpty()) {

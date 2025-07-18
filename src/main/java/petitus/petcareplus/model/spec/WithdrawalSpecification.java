@@ -60,6 +60,9 @@ public class WithdrawalSpecification implements Specification<Withdrawal> {
                 // Only get withdrawals that have not been deleted
                 predicates.add(builder.isNull(root.get("deletedAt")));
             }
+        } else {
+            // Default behavior: only get withdrawals that have not been deleted
+            predicates.add(builder.isNull(root.get("deletedAt")));
         }
 
         // Nếu không có predicate nào thì return null

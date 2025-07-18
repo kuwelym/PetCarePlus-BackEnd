@@ -80,6 +80,9 @@ public final class BookingFilterSpecification implements Specification<Booking> 
                 // Chỉ lấy những booking chưa bị xóa
                 predicates.add(builder.isNull(root.get("deletedAt")));
             }
+        } else {
+            // Mặc định chỉ lấy những booking chưa bị xóa
+            predicates.add(builder.isNull(root.get("deletedAt")));
         }
 
         // Nếu không có predicate nào thì return null

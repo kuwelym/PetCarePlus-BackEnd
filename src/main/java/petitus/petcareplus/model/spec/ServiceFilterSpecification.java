@@ -26,6 +26,7 @@ public final class ServiceFilterSpecification implements Specification<DefaultSe
         }
 
         List<Predicate> predicates = new ArrayList<>();
+        predicates.add(builder.isNull(root.get("deletedAt")));
 
         // Search by name or description
         if (criteria.getQuery() != null && !criteria.getQuery().trim().isEmpty()) {
