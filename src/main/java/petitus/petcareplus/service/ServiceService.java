@@ -20,9 +20,11 @@ import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.spec.ServiceFilterSpecification;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.ServiceCriteria;
+import petitus.petcareplus.repository.ProviderServiceRepository;
 import petitus.petcareplus.repository.ServiceRepository;
 import petitus.petcareplus.utils.PageRequestBuilder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 public class ServiceService {
     private final ServiceRepository serviceRepository;
     private final ProviderServiceService providerServiceService;
+    private final ProviderServiceRepository providerServiceRepository;
 
     // old method
     public List<ServiceResponse> getAllServices() {
@@ -134,10 +137,17 @@ public class ServiceService {
 
     @Transactional
     public void deleteService(UUID id) {
-        if (!serviceRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Service not found with id: " + id);
+        // Check if there are any provider services associated with this service
+        List<ProviderService> providerServices = providerServiceRepository.findByServiceId(id);
+        if (!providerServices.isEmpty()) {
+            throw new BadRequestException("Cannot delete service that is associated with provider services");
         }
-        serviceRepository.deleteById(id);
+        // Soft delete the service by setting deletedAt
+        DefaultService service = serviceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        service.setDeletedAt(LocalDateTime.now());
+
+        serviceRepository.save(service);
     }
 
     public List<ServiceResponse> searchServices(ServiceCriteria criteria) {
