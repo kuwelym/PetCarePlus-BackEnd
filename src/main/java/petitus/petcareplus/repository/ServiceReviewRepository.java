@@ -16,6 +16,8 @@ import java.util.UUID;
 @Repository
 public interface ServiceReviewRepository
                 extends JpaRepository<ServiceReview, UUID>, JpaSpecificationExecutor<ServiceReview> {
+        @Query("SELECT sr FROM ServiceReview sr WHERE sr.deletedAt IS NULL AND sr.id = :id")
+        Optional<ServiceReview> findById(@Param("id") UUID id);
 
         @Query("SELECT sr FROM ServiceReview sr WHERE sr.deletedAt IS NULL AND sr.user.id = :userId ORDER BY sr.createdAt DESC")
         List<ServiceReview> findAllByUserId(@Param("userId") UUID userId);

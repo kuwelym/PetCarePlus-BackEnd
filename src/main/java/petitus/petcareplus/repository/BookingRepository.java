@@ -12,10 +12,14 @@ import petitus.petcareplus.utils.enums.BookingStatus;
 import petitus.petcareplus.model.Booking;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpecificationExecutor<Booking> {
+
+        @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.id = :bookingId")
+        Optional<Booking> findById(@Param("bookingId") UUID bookingId);
 
         @Query("SELECT b FROM Booking b WHERE b.deletedAt IS NULL AND b.user.id = :userId ORDER BY b.createdAt DESC")
         List<Booking> findAllByUserId(@Param("userId") UUID userId);

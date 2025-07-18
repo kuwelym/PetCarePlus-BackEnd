@@ -1,162 +1,128 @@
 package petitus.petcareplus.model.spec;
 
-import jakarta.persistence.criteria.Join;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.ServiceReview;
 import petitus.petcareplus.model.User;
+import petitus.petcareplus.model.spec.criteria.ServiceReviewCriteria;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+@Slf4j
+@RequiredArgsConstructor
+public final class ServiceReviewSpecification implements Specification<ServiceReview> {
+    private final ServiceReviewCriteria criteria;
 
-public class ServiceReviewSpecification {
+    @Override
+    public Predicate toPredicate(@NonNull final Root<ServiceReview> root,
+            @NonNull final CriteriaQuery<?> query,
+            @NonNull final CriteriaBuilder builder) {
+        if (criteria == null) {
+            return null;
+        }
 
-    // Search by comment or user name
-    public static Specification<ServiceReview> searchByQuery(String query) {
-        return (root, criteriaQuery, criteriaBuilder) -> {
-            if (query == null || query.trim().isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
+        List<Predicate> predicates = new ArrayList<>();
 
-            String searchPattern = "%" + query.toLowerCase() + "%";
+        // Search by comment or user name
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String searchPattern = "%" + criteria.getQuery().toLowerCase() + "%";
             Join<ServiceReview, User> userJoin = root.join("user");
 
-            return criteriaBuilder.or(
-                    criteriaBuilder.like(criteriaBuilder.lower(root.get("comment")), searchPattern),
-                    criteriaBuilder.like(criteriaBuilder.lower(userJoin.get("name")), searchPattern),
-                    criteriaBuilder.like(criteriaBuilder.lower(userJoin.get("lastName")), searchPattern));
-        };
-    }
+            predicates.add(builder.or(
+                    builder.like(builder.lower(root.get("comment")), searchPattern),
+                    builder.like(builder.lower(userJoin.get("name")), searchPattern),
+                    builder.like(builder.lower(userJoin.get("lastName")), searchPattern)));
+        }
 
-    // Filter by reviewer (user who wrote the review)
-    public static Specification<ServiceReview> byUserId(UUID userId) {
-        return (root, query, criteriaBuilder) -> {
-            if (userId == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("user").get("id"), userId);
-        };
-    }
+        // Filter by reviewer (user who wrote the review)
+        if (criteria.getUserId() != null) {
+            predicates.add(builder.equal(root.get("user").get("id"), criteria.getUserId()));
+        }
 
-    // Filter by provider
-    public static Specification<ServiceReview> byProviderId(UUID providerId) {
-        return (root, query, criteriaBuilder) -> {
-            if (providerId == null) {
-                return criteriaBuilder.conjunction();
-            }
+        // Filter by provider
+        if (criteria.getProviderId() != null) {
             Join<ServiceReview, ProviderService> providerServiceJoin = root.join("providerService");
-            return criteriaBuilder.equal(providerServiceJoin.get("provider").get("id"), providerId);
-        };
-    }
+            predicates.add(builder.equal(providerServiceJoin.get("provider").get("id"), criteria.getProviderId()));
+        }
 
-    // Filter by service
-    public static Specification<ServiceReview> byServiceId(UUID serviceId) {
-        return (root, query, criteriaBuilder) -> {
-            if (serviceId == null) {
-                return criteriaBuilder.conjunction();
-            }
+        // Filter by service
+        if (criteria.getServiceId() != null) {
             Join<ServiceReview, ProviderService> providerServiceJoin = root.join("providerService");
             Join<ProviderService, DefaultService> serviceJoin = providerServiceJoin.join("service");
-            return criteriaBuilder.equal(serviceJoin.get("id"), serviceId);
-        };
-    }
+            predicates.add(builder.equal(serviceJoin.get("id"), criteria.getServiceId()));
+        }
 
-    // Filter by provider service
-    public static Specification<ServiceReview> byProviderServiceId(UUID providerServiceId) {
-        return (root, query, criteriaBuilder) -> {
-            if (providerServiceId == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("providerService").get("id"), providerServiceId);
-        };
-    }
+        // Filter by provider service
+        if (criteria.getProviderServiceId() != null) {
+            predicates.add(builder.equal(root.get("providerService").get("id"), criteria.getProviderServiceId()));
+        }
 
-    // Filter by rating range
-    public static Specification<ServiceReview> ratingGreaterThanOrEqual(Integer minRating) {
-        return (root, query, criteriaBuilder) -> {
-            if (minRating == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.greaterThanOrEqualTo(root.get("rating"), minRating);
-        };
-    }
+        // Filter by specific rating
+        if (criteria.getRating() != null) {
+            predicates.add(builder.equal(root.get("rating"), criteria.getRating()));
+        }
 
-    public static Specification<ServiceReview> ratingLessThanOrEqual(Integer maxRating) {
-        return (root, query, criteriaBuilder) -> {
-            if (maxRating == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.lessThanOrEqualTo(root.get("rating"), maxRating);
-        };
-    }
+        // Filter by rating range
+        if (criteria.getMinRating() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("rating"), criteria.getMinRating()));
+        }
 
-    // Filter by date range
-    public static Specification<ServiceReview> createdAfter(LocalDateTime createdAtStart) {
-        return (root, query, criteriaBuilder) -> {
-            if (createdAtStart == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), createdAtStart);
-        };
-    }
+        if (criteria.getMaxRating() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("rating"), criteria.getMaxRating()));
+        }
 
-    public static Specification<ServiceReview> createdBefore(LocalDateTime createdAtEnd) {
-        return (root, query, criteriaBuilder) -> {
-            if (createdAtEnd == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.lessThanOrEqualTo(root.get("createdAt"), createdAtEnd);
-        };
-    }
+        // Filter by date range
+        if (criteria.getCreatedAtStart() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart()));
+        }
 
-    // Filter by comment existence
-    public static Specification<ServiceReview> hasComment(Boolean hasComment) {
-        return (root, query, criteriaBuilder) -> {
-            if (hasComment == null) {
-                return criteriaBuilder.conjunction();
-            }
+        if (criteria.getCreatedAtEnd() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd()));
+        }
 
-            if (hasComment) {
-                return criteriaBuilder.and(
-                        criteriaBuilder.isNotNull(root.get("comment")),
-                        criteriaBuilder.notEqual(root.get("comment"), ""));
+        // Filter by comment existence
+        if (criteria.getHasComment() != null) {
+            if (criteria.getHasComment()) {
+                predicates.add(builder.and(
+                        builder.isNotNull(root.get("comment")),
+                        builder.notEqual(root.get("comment"), "")));
             } else {
-                return criteriaBuilder.or(
-
-                        criteriaBuilder.isNull(root.get("comment")),
-                        criteriaBuilder.equal(root.get("comment"), ""));
+                predicates.add(builder.or(
+                        builder.isNull(root.get("comment")),
+                        builder.equal(root.get("comment"), "")));
             }
-        };
-    }
+        }
 
-    // Filter by deleted status
-    public static Specification<ServiceReview> isDeleted(Boolean isDeleted) {
-        return (root, query, criteriaBuilder) -> {
-            if (isDeleted == null) {
-                return criteriaBuilder.conjunction();
-            }
-
-            if (isDeleted) {
-                return criteriaBuilder.isNotNull(root.get("deletedAt"));
+        // Filter by deleted status
+        if (criteria.getIsDeleted() != null) {
+            if (criteria.getIsDeleted()) {
+                // Chỉ lấy những review đã bị xóa
+                predicates.add(builder.isNotNull(root.get("deletedAt")));
             } else {
-                return criteriaBuilder.isNull(root.get("deletedAt"));
+                // Chỉ lấy những review chưa bị xóa
+                predicates.add(builder.isNull(root.get("deletedAt")));
             }
-        };
-    }
+        } else {
+            // Mặc định chỉ lấy những review chưa bị xóa
+            predicates.add(builder.isNull(root.get("deletedAt")));
+        }
 
-    // Active reviews only (not deleted)
-    public static Specification<ServiceReview> isActive() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt"));
-    }
+        // Nếu không có predicate nào thì return null
+        if (predicates.isEmpty()) {
+            return null;
+        }
 
-    // Filter by specific rating
-    public static Specification<ServiceReview> byRating(Integer rating) {
-        return (root, query, criteriaBuilder) -> {
-            if (rating == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("rating"), rating);
-        };
+        return builder.and(predicates.toArray(new Predicate[0]));
     }
 }

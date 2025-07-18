@@ -18,47 +18,43 @@ public final class ServiceProviderProfileFilterSpecification implements Specific
 
     @Override
     public Predicate toPredicate(@NonNull final Root<ServiceProviderProfile> root,
-                                 @NonNull final CriteriaQuery<?> query,
-                                 @NonNull final CriteriaBuilder builder) {
+            @NonNull final CriteriaQuery<?> query,
+            @NonNull final CriteriaBuilder builder) {
         if (criteria == null) {
             return null;
         }
 
         List<Predicate> predicates = new ArrayList<>();
+        predicates.add(builder.isNull(root.get("deletedAt")));
 
-        if (criteria.getRating() != null && criteria.getRating() >= 0){
+        if (criteria.getRating() != null && criteria.getRating() >= 0) {
             predicates.add(
                     builder.between(
                             root.get("rating"),
                             criteria.getRating(),
-                            criteria.getRating() + 1
-                    )
-            );
+                            criteria.getRating() + 1));
         }
 
         if (criteria.getSkills() != null && !criteria.getSkills().isEmpty()) {
             predicates.add(
-                    root.get("skills").in(criteria.getSkills())
-            );
+                    root.get("skills").in(criteria.getSkills()));
         }
 
         // Example of handling JSONB field (availableTime) using PostgreSQL functions
         if (criteria.getAvailableAtStart() != null) {
             predicates.add(
-                    builder.greaterThanOrEqualTo(root.get("availableTime"), criteria.getAvailableAtStart())
-            );
+                    builder.greaterThanOrEqualTo(root.get("availableTime"), criteria.getAvailableAtStart()));
         }
 
         if (criteria.getAvailableAtEnd() != null) {
             predicates.add(
-                    builder.lessThanOrEqualTo(root.get("availableTime"), criteria.getAvailableAtEnd())
-            );
+                    builder.lessThanOrEqualTo(root.get("availableTime"), criteria.getAvailableAtEnd()));
         }
 
         if (criteria.getAvailableTime() != null) {
             predicates.add(
-                    (Predicate) builder.function("jsonb_exists", Boolean.class, root.get("availableTime"), builder.literal(criteria.getAvailableTime()))
-            );
+                    (Predicate) builder.function("jsonb_exists", Boolean.class, root.get("availableTime"),
+                            builder.literal(criteria.getAvailableTime())));
         }
 
         if (criteria.getQuery() != null) {
@@ -70,34 +66,30 @@ public final class ServiceProviderProfileFilterSpecification implements Specific
                             builder.like(builder.lower(userJoin.get("name")), q),
                             builder.like(builder.lower(userJoin.get("lastName")), q),
                             builder.like(builder.lower(root.get("businessName")), q),
-                            builder.like(builder.lower(root.get("businessBio")), q)
-                    )
-            );
+                            builder.like(builder.lower(root.get("businessBio")), q)));
         }
 
         if (criteria.getLocation() != null) {
             Join<ServiceProviderProfile, Profile> profileJoin = root.join("profile", JoinType.LEFT);
             predicates.add(
-                    builder.like(builder.lower(profileJoin.get("location")), "%" + criteria.getLocation().toLowerCase() + "%")
-            );
+                    builder.like(builder.lower(profileJoin.get("location")),
+                            "%" + criteria.getLocation().toLowerCase() + "%"));
         }
 
         if (criteria.getBusinessAddress() != null) {
             predicates.add(
-                    builder.like(builder.lower(root.get("businessAddress")), "%" + criteria.getBusinessAddress().toLowerCase() + "%")
-            );
+                    builder.like(builder.lower(root.get("businessAddress")),
+                            "%" + criteria.getBusinessAddress().toLowerCase() + "%"));
         }
 
         if (criteria.getCreatedAtStart() != null) {
             predicates.add(
-                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart())
-            );
+                    builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart()));
         }
 
         if (criteria.getCreatedAtEnd() != null) {
             predicates.add(
-                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd())
-            );
+                    builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd()));
         }
 
         if (predicates.isEmpty()) {
@@ -108,4 +100,4 @@ public final class ServiceProviderProfileFilterSpecification implements Specific
 
         return query.distinct(true).getRestriction();
     }
-} 
+}

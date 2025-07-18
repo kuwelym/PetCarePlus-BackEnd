@@ -47,7 +47,7 @@ public class ProviderServiceService {
         public Page<ProviderServiceResponse> getAllProviderServices(ProviderServiceCriteria criteria,
                         PaginationCriteria pagination) {
                 // Build specification từ criteria
-                Specification<ProviderService> specification = buildSpecification(criteria);
+                Specification<ProviderService> specification = new ProviderServiceSpecification(criteria);
 
                 // Build page request từ pagination
                 PageRequest pageRequest = PageRequestBuilder.build(pagination);
@@ -61,7 +61,7 @@ public class ProviderServiceService {
 
         // Old method
         public List<ProviderServiceResponse> getAllProviderServices() {
-                return providerServiceRepository.findAll().stream()
+                return providerServiceRepository.findAllActiveService().stream()
                                 .filter(ps -> ps.getDeletedAt() == null)
                                 .map(this::mapToProviderServiceResponse)
                                 .collect(Collectors.toList());
@@ -187,25 +187,6 @@ public class ProviderServiceService {
                 // Soft delete
                 providerService.setDeletedAt(LocalDateTime.now());
                 providerServiceRepository.save(providerService);
-        }
-
-        private Specification<ProviderService> buildSpecification(ProviderServiceCriteria criteria) {
-                if (criteria == null) {
-                        log.info("ProviderServiceCriteria is null, returning all active services");
-                        // Default: chỉ lấy active services
-                        return ProviderServiceSpecification.isActive();
-                }
-
-                return Specification
-                                .where(ProviderServiceSpecification.searchByQuery(criteria.getQuery()))
-                                .and(ProviderServiceSpecification.byProviderId(criteria.getProviderId()))
-                                .and(ProviderServiceSpecification.byServiceId(criteria.getServiceId()))
-                                .and(ProviderServiceSpecification.priceGreaterThanOrEqual(criteria.getMinCustomPrice()))
-                                .and(ProviderServiceSpecification.priceLessThanOrEqual(criteria.getMaxCustomPrice()))
-                                // .and(ProviderServiceSpecification.byLocation(criteria.getLocation()))
-                                .and(ProviderServiceSpecification.createdAfter(criteria.getCreatedAtStart()))
-                                .and(ProviderServiceSpecification.createdBefore(criteria.getCreatedAtEnd()))
-                                .and(ProviderServiceSpecification.isDeleted(criteria.getIsDeleted()));
         }
 
         private ProviderServiceResponse mapToProviderServiceResponse(ProviderService providerService) {

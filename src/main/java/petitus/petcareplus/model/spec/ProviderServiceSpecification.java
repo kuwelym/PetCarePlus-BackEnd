@@ -1,136 +1,97 @@
 package petitus.petcareplus.model.spec;
 
-import jakarta.persistence.criteria.Join;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import petitus.petcareplus.model.DefaultService;
 import petitus.petcareplus.model.ProviderService;
 import petitus.petcareplus.model.User;
-import petitus.petcareplus.model.profile.Profile;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import petitus.petcareplus.model.spec.criteria.ProviderServiceCriteria;
 
 @Slf4j
-public class ProviderServiceSpecification {
+@RequiredArgsConstructor
+public final class ProviderServiceSpecification implements Specification<ProviderService> {
+    private final ProviderServiceCriteria criteria;
 
-    // Search by service name or provider name
-    public static Specification<ProviderService> searchByQuery(String query) {
-        return (root, criteriaQuery, criteriaBuilder) -> {
-            if (query == null || query.trim().isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
+    @Override
+    public Predicate toPredicate(@NonNull final Root<ProviderService> root,
+            @NonNull final CriteriaQuery<?> query,
+            @NonNull final CriteriaBuilder builder) {
+        if (criteria == null) {
+            return null;
+        }
 
-            String searchPattern = "%" + query.toLowerCase() + "%";
+        List<Predicate> predicates = new ArrayList<>();
+
+        // Search by service name or provider name
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String searchPattern = "%" + criteria.getQuery().toLowerCase() + "%";
             Join<ProviderService, DefaultService> serviceJoin = root.join("service");
             Join<ProviderService, User> providerJoin = root.join("provider");
 
-            return criteriaBuilder.or(
-                    criteriaBuilder.like(criteriaBuilder.lower(serviceJoin.get("name")), searchPattern),
-                    // criteriaBuilder.like(criteriaBuilder.lower(serviceJoin.get("description")),
-                    // searchPattern),
-                    criteriaBuilder.like(criteriaBuilder.lower(providerJoin.get("name")), searchPattern),
-                    criteriaBuilder.like(criteriaBuilder.lower(providerJoin.get("lastName")), searchPattern));
-        };
-    }
+            predicates.add(builder.or(
+                    builder.like(builder.lower(serviceJoin.get("name")), searchPattern),
+                    builder.like(builder.lower(providerJoin.get("name")), searchPattern),
+                    builder.like(builder.lower(providerJoin.get("lastName")), searchPattern)));
+        }
 
-    // Filter by provider ID
-    public static Specification<ProviderService> byProviderId(UUID providerId) {
-        return (root, query, criteriaBuilder) -> {
-            if (providerId == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("provider").get("id"), providerId);
-        };
-    }
+        // Filter by provider ID
+        if (criteria.getProviderId() != null) {
+            predicates.add(builder.equal(root.get("provider").get("id"), criteria.getProviderId()));
+        }
 
-    // Filter by service ID
-    public static Specification<ProviderService> byServiceId(UUID serviceId) {
-        return (root, query, criteriaBuilder) -> {
-            if (serviceId == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("service").get("id"), serviceId);
-        };
-    }
+        // Filter by service ID
+        if (criteria.getServiceId() != null) {
+            predicates.add(builder.equal(root.get("service").get("id"), criteria.getServiceId()));
+        }
 
-    // Filter by price range
-    public static Specification<ProviderService> priceGreaterThanOrEqual(BigDecimal minPrice) {
-        return (root, query, criteriaBuilder) -> {
-            if (minPrice == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.greaterThanOrEqualTo(root.get("customPrice"), minPrice);
-        };
-    }
+        // Filter by price range
+        if (criteria.getMinCustomPrice() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("customPrice"), criteria.getMinCustomPrice()));
+        }
 
-    public static Specification<ProviderService> priceLessThanOrEqual(BigDecimal maxPrice) {
-        return (root, query, criteriaBuilder) -> {
-            if (maxPrice == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.lessThanOrEqualTo(root.get("customPrice"), maxPrice);
-        };
-    }
+        if (criteria.getMaxCustomPrice() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("customPrice"), criteria.getMaxCustomPrice()));
+        }
 
-    // Filter by provider location
-    public static Specification<ProviderService> byLocation(String location) {
-        return (root, criteriaQuery, criteriaBuilder) -> {
-            if (location == null || location.trim().isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
+        // Filter by date range
+        if (criteria.getCreatedAtStart() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtStart()));
+        }
 
-            Join<ProviderService, User> providerJoin = root.join("provider");
-            Join<User, Profile> profileJoin = providerJoin.join("profile");
+        if (criteria.getCreatedAtEnd() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedAtEnd()));
+        }
 
-            String searchPattern = "%" + location.toLowerCase() + "%";
-            return criteriaBuilder.like(
-                    criteriaBuilder.lower(profileJoin.get("location")),
-                    searchPattern);
-        };
-    }
-
-    // Filter by date range
-    public static Specification<ProviderService> createdAfter(LocalDateTime createdAtStart) {
-        return (root, query, criteriaBuilder) -> {
-            if (createdAtStart == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), createdAtStart);
-        };
-    }
-
-    public static Specification<ProviderService> createdBefore(LocalDateTime createdAtEnd) {
-        return (root, query, criteriaBuilder) -> {
-            if (createdAtEnd == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.lessThanOrEqualTo(root.get("createdAt"), createdAtEnd);
-        };
-    }
-
-    // Filter by deleted status
-    public static Specification<ProviderService> isDeleted(Boolean isDeleted) {
-        return (root, query, criteriaBuilder) -> {
-            if (isDeleted == null) {
-                // log.info("isDeleted is null, returning all active services");
-                return criteriaBuilder.isNull(root.get("deletedAt"));
-            }
-
-            if (isDeleted) {
-                // log.info("Filtering for deleted services");
-                return criteriaBuilder.isNotNull(root.get("deletedAt"));
+        // Filter by deleted status
+        if (criteria.getIsDeleted() != null) {
+            if (criteria.getIsDeleted()) {
+                // Chỉ lấy những provider service đã bị xóa
+                predicates.add(builder.isNotNull(root.get("deletedAt")));
             } else {
-                // log.info("Filtering for active services");
-                return criteriaBuilder.isNull(root.get("deletedAt"));
+                // Chỉ lấy những provider service chưa bị xóa
+                predicates.add(builder.isNull(root.get("deletedAt")));
             }
-        };
-    }
+        } else {
+            // Mặc định chỉ lấy những provider service chưa bị xóa
+            predicates.add(builder.isNull(root.get("deletedAt")));
+        }
 
-    // Active services only (not deleted)
-    public static Specification<ProviderService> isActive() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt"));
+        // Nếu không có predicate nào thì return null
+        if (predicates.isEmpty()) {
+            return null;
+        }
+
+        return builder.and(predicates.toArray(new Predicate[0]));
     }
 }

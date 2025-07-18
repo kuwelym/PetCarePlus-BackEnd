@@ -28,6 +28,7 @@ public final class UserFilterSpecification implements Specification<User> {
         }
 
         List<Predicate> predicates = new ArrayList<>();
+        predicates.add(builder.isNull(root.get("deletedAt")));
 
         if (criteria.getRoles() != null && !criteria.getRoles().isEmpty()) {
             Join<User, Role> roleJoin = root.join("role");

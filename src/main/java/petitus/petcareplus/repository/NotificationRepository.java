@@ -17,6 +17,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     @Query("SELECT n FROM Notification n WHERE n.userIdReceive = :userIdReceive AND n.deletedAt IS NULL")
     List<Notification> findByUserIdReceive(UUID userIdReceive);
 
+    @Query("SELECT n FROM Notification n WHERE n.deletedAt IS NULL AND n.id = :notificationId")
     Optional<Notification> findById(UUID notificationId);
 
     Page<Notification> findByDeletedAtIsNull(Pageable pageable);

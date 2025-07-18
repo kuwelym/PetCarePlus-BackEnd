@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,9 +22,7 @@ import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.ProviderServiceService;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
-//import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,9 +42,11 @@ public class ProviderServiceController {
                         @RequestParam(required = false) UUID serviceId,
                         @RequestParam(required = false) BigDecimal minPrice,
                         @RequestParam(required = false) BigDecimal maxPrice,
-                        @RequestParam(required = false) String location,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtStart,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtEnd,
+                        // @RequestParam(required = false) String location,
+                        // @RequestParam(required = false) @DateTimeFormat(iso =
+                        // DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtStart,
+                        // @RequestParam(required = false) @DateTimeFormat(iso =
+                        // DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtEnd,
                         @RequestParam(required = false) Boolean isDeleted,
 
                         // Pagination parameters
@@ -63,8 +62,8 @@ public class ProviderServiceController {
                                 .minCustomPrice(minPrice)
                                 .maxCustomPrice(maxPrice)
                                 // .location(location)
-                                .createdAtStart(createdAtStart)
-                                .createdAtEnd(createdAtEnd)
+                                // .createdAtStart(createdAtStart)
+                                // .createdAtEnd(createdAtEnd)
                                 .isDeleted(isDeleted)
                                 .build();
 

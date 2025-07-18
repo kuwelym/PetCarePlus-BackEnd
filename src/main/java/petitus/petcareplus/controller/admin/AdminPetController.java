@@ -30,6 +30,7 @@ import petitus.petcareplus.dto.response.pet.PetResponse;
 
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.model.spec.criteria.PetCriteria;
+import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.service.PetService;
 
 @RestController
@@ -42,6 +43,7 @@ import petitus.petcareplus.service.PetService;
 public class AdminPetController {
 
     private final PetService petService;
+    private final MessageSourceService messageSourceService;
 
     @GetMapping
     @Operation(summary = "Get all pets with pagination and filtering")
@@ -109,9 +111,9 @@ public class AdminPetController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a pet for admin")
-    public ResponseEntity<Void> deletePetForAdmin(@PathVariable UUID id) {
+    public ResponseEntity<String> deletePetForAdmin(@PathVariable UUID id) {
         petService.deletePetForAdmin(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(messageSourceService.get("pet_deleted_successfully"));
     }
 
     @GetMapping("/statistics")

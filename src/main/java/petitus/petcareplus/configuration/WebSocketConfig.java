@@ -19,7 +19,6 @@ import petitus.petcareplus.exceptions.WebSocketExceptionHandler;
 import petitus.petcareplus.security.config.AuthChannelInterceptor;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -46,7 +45,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Configure allowed origins based on environment
         String[] origins = getAllowedOrigins();
-        
+
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(origins)
                 .setAllowedOriginPatterns("*") // Fallback for pattern matching
@@ -54,14 +53,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setStreamBytesLimit(16 * 1024 * 1024) // 16MB for SockJS
                 .setHttpMessageCacheSize(2000)
                 .setDisconnectDelay(5 * 1000); // 5 seconds disconnect delay
-        
+
         // Add a non-SockJS endpoint for direct WebSocket connections
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(origins)
                 .setAllowedOriginPatterns("*");
-        
+
         registry.setErrorHandler(webSocketExceptionHandler);
-        
+
         log.info("WebSocket endpoints registered with allowed origins: {}", Arrays.toString(origins));
     }
 
@@ -93,21 +92,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             });
 
             factory.addContextCustomizers(context ->
-                    // Configure WebSocket container limits
-                    context.addServletContainerInitializer((classes, servletContext) -> {
-                        try {
-                            ServerContainer serverContainer = (ServerContainer) servletContext.getAttribute(ServerContainer.class.getName());
-                            if (serverContainer != null) {
-                                // Set WebSocket message size limits
-                                serverContainer.setDefaultMaxTextMessageBufferSize(20 * 1024 * 1024); // 20MB
-                                serverContainer.setDefaultMaxBinaryMessageBufferSize(20 * 1024 * 1024); // 20MB
-                                serverContainer.setDefaultMaxSessionIdleTimeout(300000); // 5 minutes
-                            }
-                        } catch (Exception e) {
-                            log.error("Error configuring WebSocket container limits", e);
-                        }
-                    }, null)
-            );
+            // Configure WebSocket container limits
+            context.addServletContainerInitializer((classes, servletContext) -> {
+                try {
+                    ServerContainer serverContainer = (ServerContainer) servletContext
+                            .getAttribute(ServerContainer.class.getName());
+                    if (serverContainer != null) {
+                        // Set WebSocket message size limits
+                        serverContainer.setDefaultMaxTextMessageBufferSize(20 * 1024 * 1024); // 20MB
+                        serverContainer.setDefaultMaxBinaryMessageBufferSize(20 * 1024 * 1024); // 20MB
+                        serverContainer.setDefaultMaxSessionIdleTimeout(300000); // 5 minutes
+                    }
+                } catch (Exception e) {
+                    log.error("Error configuring WebSocket container limits", e);
+                }
+            }, null));
         };
     }
 
@@ -119,14 +118,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private String[] getAllowedOrigins() {
         if (allowedOrigins.length == 1 && "*".equals(allowedOrigins[0])) {
             // For production, you might want to be more specific
-            return new String[]{
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://localhost:3001",
-                "https://petcareplus.software",
-                "https://www.petcareplus.software",
-                "https://petcareapi.nhhtuan.id.vn",
-                "https://www.petcareapi.nhhtuan.id.vn"
+            return new String[] {
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                    "http://localhost:3001",
+                    "https://petcareplus.software",
+                    "https://www.petcareplus.software",
+                    "https://petcareapi.nhhtuan.id.vn",
+                    "https://www.petcareapi.nhhtuan.id.vn"
             };
         }
         return allowedOrigins;

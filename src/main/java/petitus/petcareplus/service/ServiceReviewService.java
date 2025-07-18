@@ -48,7 +48,7 @@ public class ServiceReviewService {
 
     public Page<ServiceReviewResponse> getAllReviews(ServiceReviewCriteria criteria, PaginationCriteria pagination) {
         // Build specification từ criteria
-        Specification<ServiceReview> specification = buildSpecification(criteria);
+        Specification<ServiceReview> specification = new ServiceReviewSpecification(criteria);
 
         // Build page request từ pagination
         PageRequest pageRequest = PageRequestBuilder.build(pagination);
@@ -180,7 +180,6 @@ public class ServiceReviewService {
         UUID userId = userService.getCurrentUserId();
         ServiceReviewCriteria criteria = ServiceReviewCriteria.builder()
                 .userId(userId)
-                .isDeleted(false)
                 .build();
         return getAllReviews(criteria, pagination);
     }
@@ -192,7 +191,6 @@ public class ServiceReviewService {
             throw new ResourceNotFoundException(messageSourceService.get("provider_service_not_found"));
         }
         criteria.setProviderServiceId(providerServiceId);
-        criteria.setIsDeleted(false);
         return getAllReviews(criteria, pagination);
     }
 
@@ -211,7 +209,6 @@ public class ServiceReviewService {
         }
         ServiceReviewCriteria criteria = ServiceReviewCriteria.builder()
                 .providerId(providerId)
-                .isDeleted(false)
                 .build();
         return getAllReviews(criteria, pagination);
     }
@@ -255,27 +252,6 @@ public class ServiceReviewService {
         }
     }
 
-    private Specification<ServiceReview> buildSpecification(ServiceReviewCriteria criteria) {
-        if (criteria == null) {
-            // Default: chỉ lấy active reviews
-            return ServiceReviewSpecification.isActive();
-        }
-
-        return Specification
-                .where(ServiceReviewSpecification.searchByQuery(criteria.getQuery()))
-                .and(ServiceReviewSpecification.byUserId(criteria.getUserId()))
-                .and(ServiceReviewSpecification.byProviderId(criteria.getProviderId()))
-                .and(ServiceReviewSpecification.byServiceId(criteria.getServiceId()))
-                .and(ServiceReviewSpecification.byProviderServiceId(criteria.getProviderServiceId()))
-                .and(ServiceReviewSpecification.ratingGreaterThanOrEqual(criteria.getMinRating()))
-                .and(ServiceReviewSpecification.ratingLessThanOrEqual(criteria.getMaxRating()))
-                .and(ServiceReviewSpecification.createdAfter(criteria.getCreatedAtStart()))
-                .and(ServiceReviewSpecification.createdBefore(criteria.getCreatedAtEnd()))
-                .and(ServiceReviewSpecification.hasComment(criteria.getHasComment()))
-                .and(ServiceReviewSpecification.isDeleted(criteria.getIsDeleted()))
-                .and(ServiceReviewSpecification.byRating(criteria.getRating()));
-    }
-
     private ServiceReviewResponse mapToServiceReviewResponse(ServiceReview review) {
         return ServiceReviewResponse.builder()
                 .id(review.getId())
@@ -294,7 +270,6 @@ public class ServiceReviewService {
                 .commentHistory(review.getCommentHistory())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
-                .deletedAt(review.getDeletedAt())
                 .build();
     }
 }

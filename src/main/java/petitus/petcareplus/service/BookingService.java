@@ -1,6 +1,7 @@
 package petitus.petcareplus.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookingService {
@@ -169,44 +171,19 @@ public class BookingService {
                 booking.setCancellationReason(request.getCancellationReason());
                 break;
             case SERVICE_DONE:
-                // Only provider can mark as service done
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_mark_service_done"));
-                // }
                 booking.setActualEndTime(LocalDateTime.now());
                 break;
             case COMPLETED:
-                // Only user can mark as completed
-                // if (!isUser) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_user_can_mark_completed"));
-                // }
                 if (booking.getPaymentStatus() != PaymentStatus.COMPLETED) {
                     throw new BadRequestException(messageSourceService.get("payment_required_before_completion"));
                 }
 
                 booking.setActualEndTime(LocalDateTime.now());
-                // walletService.createWalletTransaction(booking.getProvider().getId(),
-                // booking.getTotalPrice(),
-                // TransactionType.SERVICE_PROVIDER_EARNING, TransactionStatus.COMPLETED,
-                // "Payment for provider",
-                // bookingId);
                 handleWalletAfterPaymentSuccess(booking);
                 break;
             case ONGOING:
-                // Only provider can mark as ongoing
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_mark_ongoing"));
-                // }
                 break;
             case ACCEPTED:
-                // Only provider can accept booking
-                // if (!isProvider) {
-                // throw new
-                // ForbiddenException(messageSourceService.get("only_provider_can_accept_booking"));
-                // }
                 break;
             default:
                 break;
@@ -224,6 +201,12 @@ public class BookingService {
         // Check if user is owner or provider
         if (!booking.getUser().getId().equals(userId) && !booking.getProvider().getId().equals(userId)) {
             throw new ForbiddenException(messageSourceService.get("booking_delete_not_allowed"));
+        }
+
+        // Check if booking not cancelled
+        if (booking.getStatus() != BookingStatus.CANCELLED) {
+            log.info("Booking status {} is not cancelled, cannot delete", booking.getStatus());
+            throw new BadRequestException(messageSourceService.get("only_cancelled_booking_can_be_deleted"));
         }
 
         // Soft delete
@@ -286,15 +269,6 @@ public class BookingService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(messageSourceService.get("invalid_booking_status"));
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Page<BookingResponse> getProviderBookingsForDateRange(UUID providerId, LocalDateTime startDate,
-            LocalDateTime endDate, PaginationCriteria pagination) {
-        PageRequest pageRequest = PageRequestBuilder.build(pagination);
-        Page<Booking> bookings = bookingRepository.findAllByProviderIdBetweenDates(providerId, startDate, endDate,
-                pageRequest);
-        return bookings.map(this::mapToBookingResponse);
     }
 
     // Helper methods
@@ -365,13 +339,14 @@ public class BookingService {
                         throw new ForbiddenException(messageSourceService.get("only_user_can_mark_completed"));
                     }
                     return; // Transition valid
-                } else if (newStatus == BookingStatus.CANCELLED) {
-                    if (!isUser) {
-                        throw new ForbiddenException(
-                                messageSourceService.get("only_user_can_cancel_after_service_done"));
-                    }
-                    return; // Transition valid
                 }
+                // } else if (newStatus == BookingStatus.CANCELLED) {
+                // if (!isUser) {
+                // throw new ForbiddenException(
+                // messageSourceService.get("only_user_can_cancel_after_service_done"));
+                // }
+                // return; // Transition valid
+                // }
                 break;
 
             case COMPLETED:
