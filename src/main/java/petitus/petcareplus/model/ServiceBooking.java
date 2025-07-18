@@ -19,7 +19,7 @@ public class ServiceBooking {
     @EmbeddedId
     private ServiceBookingId id;
 
-    @Column(name = "price", nullable = false, precision = 8, scale = 2)
+    @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY)
