@@ -61,7 +61,7 @@ public class ProviderServiceService {
 
         // Old method
         public List<ProviderServiceResponse> getAllProviderServices() {
-                return providerServiceRepository.findAll().stream()
+                return providerServiceRepository.findAllActiveService().stream()
                                 .filter(ps -> ps.getDeletedAt() == null)
                                 .map(this::mapToProviderServiceResponse)
                                 .collect(Collectors.toList());

@@ -26,4 +26,10 @@ public interface ProviderServiceRepository
 
     // Tìm bao gồm cả soft deleted
     Optional<ProviderService> findByProviderIdAndServiceId(UUID providerId, UUID serviceId);
+
+    @Query("SELECT ps FROM ProviderService ps WHERE ps.deletedAt IS NULL")
+    List<ProviderService> findAllActiveService();
+
+    @Query("SELECT ps FROM ProviderService ps WHERE ps.deletedAt IS NULL AND ps.id = :id")
+    Optional<ProviderService> findById(UUID id);
 }

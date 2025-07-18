@@ -39,13 +39,19 @@ public class ServiceService {
 
     // old method
     public List<ServiceResponse> getAllServices() {
-        return serviceRepository.findAll().stream()
+        // find all services, filter out deleted ones
+        List<ServiceResponse> services = serviceRepository.findAllActiveServices().stream()
                 .map(this::mapToServiceResponse)
                 .collect(Collectors.toList());
+
+        if (services.isEmpty()) {
+            return List.of(); // Return empty list if no services found
+        }
+        return services;
     }
 
     public List<ServiceResponseForProvider> getAllServicesForCurrentProvider(UUID providerId) {
-        List<DefaultService> services = serviceRepository.findAll();
+        List<DefaultService> services = serviceRepository.findAllActiveServices();
 
         if (services.isEmpty()) {
             return List.of(); // Return empty list if no services found
@@ -68,7 +74,7 @@ public class ServiceService {
     // new method with pagination
     public List<ServiceResponse> getAllServices(PaginationCriteria pagination) {
         // PageRequest pageRequest = PageRequestBuilder.build(pagination);
-        List<DefaultService> services = serviceRepository.findAll();
+        List<DefaultService> services = serviceRepository.findAllActiveServices();
 
         return services.stream()
                 .map(this::mapToServiceResponse)
@@ -98,6 +104,7 @@ public class ServiceService {
                 .build();
 
         DefaultService savedService = serviceRepository.save(service);
+        serviceRepository.flush();
 
         return mapToAdminServiceResponse(savedService);
     }
@@ -131,6 +138,7 @@ public class ServiceService {
         }
 
         DefaultService updatedService = serviceRepository.save(service);
+        serviceRepository.flush();
 
         return mapToAdminServiceResponse(updatedService);
     }
