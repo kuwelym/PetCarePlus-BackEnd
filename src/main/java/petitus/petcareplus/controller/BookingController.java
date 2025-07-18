@@ -1,12 +1,10 @@
 package petitus.petcareplus.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,9 +17,9 @@ import petitus.petcareplus.dto.response.booking.BookingResponse;
 import petitus.petcareplus.model.spec.criteria.PaginationCriteria;
 import petitus.petcareplus.security.jwt.JwtUserDetails;
 import petitus.petcareplus.service.BookingService;
+import petitus.petcareplus.service.MessageSourceService;
 import petitus.petcareplus.utils.enums.BookingStatus;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +29,7 @@ import java.util.UUID;
 public class BookingController {
 
         private final BookingService bookingService;
+        private final MessageSourceService messageSourceService;
 
         @PostMapping
         @PreAuthorize("hasAuthority('USER')")
@@ -69,12 +68,12 @@ public class BookingController {
         @DeleteMapping("/{bookingId}")
         @PreAuthorize("hasAnyAuthority('USER', 'SERVICE_PROVIDER', 'ADMIN')")
         @Operation(summary = "Delete a booking", description = "Soft-delete a booking")
-        public ResponseEntity<Void> deleteBooking(
+        public ResponseEntity<String> deleteBooking(
                         @AuthenticationPrincipal JwtUserDetails userDetails,
                         @PathVariable UUID bookingId) {
 
                 bookingService.deleteBooking(userDetails.getId(), bookingId);
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok(messageSourceService.get("booking_deleted_successfully"));
         }
 
         @GetMapping("/user")
@@ -176,36 +175,6 @@ public class BookingController {
 
                 Page<BookingResponse> bookings = bookingService.getProviderBookingsByStatus(userDetails.getId(), status,
                                 pagination);
-                StandardPaginationResponse<BookingResponse> response = new StandardPaginationResponse<>(
-                                bookings,
-                                bookings.getContent());
-                return ResponseEntity.ok(response);
-        }
-
-        @GetMapping("/provider/schedule")
-        @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
-        @Operation(summary = "Get provider's schedule", description = "Get all bookings for a specific time range")
-        public ResponseEntity<StandardPaginationResponse<BookingResponse>> getProviderSchedule(
-                        @AuthenticationPrincipal JwtUserDetails userDetails,
-                        @Parameter(description = "Start date-time") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-                        @Parameter(description = "End date-time") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
-                        @RequestParam(defaultValue = "1") Integer page,
-                        @RequestParam(defaultValue = "10") Integer size,
-                        @RequestParam(required = false) String sortBy,
-                        @RequestParam(defaultValue = "asc") String sort) {
-
-                PaginationCriteria pagination = PaginationCriteria.builder()
-                                .page(page)
-                                .size(size)
-                                .sortBy(sortBy)
-                                .sort(sort)
-                                .columns(new String[] { "scheduledStartTime", "scheduledEndTime" }) // Allowed sort
-                                                                                                    // fields
-                                .build();
-
-                Page<BookingResponse> bookings = bookingService.getProviderBookingsForDateRange(userDetails.getId(),
-                                start,
-                                end, pagination);
                 StandardPaginationResponse<BookingResponse> response = new StandardPaginationResponse<>(
                                 bookings,
                                 bookings.getContent());
