@@ -29,5 +29,4 @@ public class ServiceReviewResponse {
     private String commentHistory;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime deletedAt;
 }

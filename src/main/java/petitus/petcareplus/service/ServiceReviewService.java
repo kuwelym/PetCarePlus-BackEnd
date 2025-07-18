@@ -270,7 +270,6 @@ public class ServiceReviewService {
                 .commentHistory(review.getCommentHistory())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
-                .deletedAt(review.getDeletedAt())
                 .build();
     }
 }
