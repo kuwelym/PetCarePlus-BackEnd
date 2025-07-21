@@ -325,12 +325,14 @@ public class BookingService {
                         throw new ForbiddenException(messageSourceService.get("only_provider_can_mark_service_done"));
                     }
                     return; // Transition valid
-                } else if (newStatus == BookingStatus.CANCELLED) {
-                    if (!isProvider) {
-                        throw new ForbiddenException(messageSourceService.get("only_provider_can_cancel_ongoing"));
-                    }
-                    return; // Transition valid
                 }
+                // } else if (newStatus == BookingStatus.CANCELLED) {
+                // if (!isProvider) {
+                // throw new
+                // ForbiddenException(messageSourceService.get("only_provider_can_cancel_ongoing"));
+                // }
+                // return; // Transition valid
+                // }
                 break;
 
             case SERVICE_DONE:
